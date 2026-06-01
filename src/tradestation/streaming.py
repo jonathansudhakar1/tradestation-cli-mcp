@@ -15,8 +15,9 @@ Implementation: Phase 2.
 from __future__ import annotations
 
 import json
-from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import aclosing
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel
 
@@ -95,16 +96,20 @@ async def stream_events(
             stream failure.
     """
     raw_iter = await transport.request_stream(path, params=params)
-    async for line in raw_iter:
-        try:
-            data = json.loads(line)
-        except (ValueError, TypeError):
-            continue
-        if not isinstance(data, dict):
-            continue
-        event = classify_frame(data)
-        if event.error is not None:
-            raise StreamError(event.error, stream_url=path, payload=event.raw)
-        if event.is_heartbeat and not include_heartbeats:
-            continue
-        yield event
+    # aclosing ensures the underlying httpx stream is closed when the consumer
+    # breaks early (e.g. --max / --for), avoiding "aclose(): asynchronous
+    # generator is already running" during event-loop shutdown.
+    async with aclosing(cast(AsyncGenerator[bytes, None], raw_iter)) as lines:
+        async for line in lines:
+            try:
+                data = json.loads(line)
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            event = classify_frame(data)
+            if event.error is not None:
+                raise StreamError(event.error, stream_url=path, payload=event.raw)
+            if event.is_heartbeat and not include_heartbeats:
+                continue
+            yield event

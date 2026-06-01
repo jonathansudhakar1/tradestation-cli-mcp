@@ -415,19 +415,88 @@ async def _consume_stream(
     loop = asyncio.get_event_loop()
     deadline = loop.time() + for_seconds if for_seconds > 0 else None
     with contextlib.suppress(KeyboardInterrupt):
-        async for ev in agen:
-            data = ev.raw or {}
-            if cli.output_mode == OutputMode.TABLE:
-                sym = data.get("Symbol") or data.get("OrderID") or ""
-                cli.console.print(f"[ts.symbol]{sym}[/ts.symbol]  {json.dumps(data, default=str)}")
-            else:
-                sys.stdout.write(json.dumps(data, default=str) + "\n")
-                sys.stdout.flush()
-            count += 1
-            if max_frames and count >= max_frames:
-                break
-            if deadline and loop.time() >= deadline:
-                break
+        async with contextlib.aclosing(agen) as stream:
+            async for ev in stream:
+                data = ev.raw or {}
+                if cli.output_mode == OutputMode.TABLE:
+                    sym = data.get("Symbol") or data.get("OrderID") or ""
+                    cli.console.print(
+                        f"[ts.symbol]{sym}[/ts.symbol]  {json.dumps(data, default=str)}"
+                    )
+                else:
+                    sys.stdout.write(json.dumps(data, default=str) + "\n")
+                    sys.stdout.flush()
+                count += 1
+                if max_frames and count >= max_frames:
+                    break
+                if deadline and loop.time() >= deadline:
+                    break
+    return count
+
+
+async def _live_quotes_stream(
+    cli: CLIContext, agen: Any, *, max_frames: int, for_seconds: float
+) -> int:
+    """Sticky-header live table: one row per symbol, updated in place.
+
+    Maintains the latest quote per symbol and re-renders a Rich table on each
+    frame via ``rich.live.Live``. Returns the number of frames consumed.
+    """
+    import contextlib
+
+    from rich import box
+    from rich.live import Live
+    from rich.table import Table
+
+    from tradestation.cli.render import _pnl_style, _sign
+
+    latest: dict[str, dict[str, Any]] = {}
+    count = 0
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + for_seconds if for_seconds > 0 else None
+
+    def _render() -> Table:
+        tbl = Table(box=box.ROUNDED, header_style="ts.header", title="Live Quotes")
+        tbl.add_column("Symbol", style="ts.symbol")
+        tbl.add_column("Last", justify="right", style="ts.price")
+        tbl.add_column("Δ", justify="right")
+        tbl.add_column("Bid", justify="right", style="ts.price")
+        tbl.add_column("Ask", justify="right", style="ts.price")
+        tbl.add_column("Volume", justify="right")
+        for sym, q in sorted(latest.items()):
+            chg = q.get("NetChange")
+            try:
+                chg_f = float(chg) if chg else 0.0
+            except (TypeError, ValueError):
+                chg_f = 0.0
+            from rich.text import Text
+
+            tbl.add_row(
+                sym,
+                str(q.get("Last", "")),
+                Text(_sign(chg_f), style=_pnl_style(chg_f)),
+                str(q.get("Bid", "")),
+                str(q.get("Ask", "")),
+                str(q.get("Volume", "")),
+            )
+        return tbl
+
+    with (
+        contextlib.suppress(KeyboardInterrupt),
+        Live(_render(), console=cli.console, refresh_per_second=8) as live,
+    ):
+        async with contextlib.aclosing(agen) as stream:
+            async for ev in stream:
+                data = ev.raw or {}
+                sym = data.get("Symbol")
+                if sym:
+                    latest[sym] = data
+                    live.update(_render())
+                count += 1
+                if max_frames and count >= max_frames:
+                    break
+                if deadline and loop.time() >= deadline:
+                    break
     return count
 
 
@@ -448,15 +517,14 @@ def stream_quotes_cmd(
     """
     cli = CLIContext.from_typer(ctx)
     syms = [s.strip() for raw in symbols for s in raw.split(",") if s.strip()]
+    # Sticky-header live table only in a TTY table view; otherwise stream JSONL.
+    live = cli.output_mode == OutputMode.TABLE and cli.console.is_terminal
 
     async def _go() -> int:
         async with cli.client.as_async() as ts:
-            return await _consume_stream(
-                cli,
-                ts.market_data.stream_quotes(syms),
-                max_frames=max_frames,
-                for_seconds=for_seconds,
-            )
+            stream = ts.market_data.stream_quotes(syms)
+            consumer = _live_quotes_stream if live else _consume_stream
+            return await consumer(cli, stream, max_frames=max_frames, for_seconds=for_seconds)
 
     n = _run_md(cli, _go())
     if cli.output_mode == OutputMode.TABLE:

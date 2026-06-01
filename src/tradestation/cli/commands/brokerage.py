@@ -344,14 +344,15 @@ async def _consume(cli: CLIContext, agen: Any, *, max_frames: int, for_seconds: 
     loop = asyncio.get_event_loop()
     deadline = loop.time() + for_seconds if for_seconds > 0 else None
     with contextlib.suppress(KeyboardInterrupt):
-        async for ev in agen:
-            sys.stdout.write(json.dumps(ev.raw or {}, default=str) + "\n")
-            sys.stdout.flush()
-            count += 1
-            if max_frames and count >= max_frames:
-                break
-            if deadline and loop.time() >= deadline:
-                break
+        async with contextlib.aclosing(agen) as stream:
+            async for ev in stream:
+                sys.stdout.write(json.dumps(ev.raw or {}, default=str) + "\n")
+                sys.stdout.flush()
+                count += 1
+                if max_frames and count >= max_frames:
+                    break
+                if deadline and loop.time() >= deadline:
+                    break
     return count
 
 
