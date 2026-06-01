@@ -18,10 +18,14 @@ import sys
 
 
 def test_version() -> None:
-    """tradestation.__version__ must equal the version in pyproject.toml."""
-    import tradestation
+    """tradestation.__version__ must be a valid semver string and match _version."""
+    import re
 
-    assert tradestation.__version__ == "0.0.1"
+    import tradestation
+    from tradestation import _version
+
+    assert tradestation.__version__ == _version.__version__
+    assert re.fullmatch(r"\d+\.\d+\.\d+([.-].+)?", tradestation.__version__)
 
 
 def test_client_is_class() -> None:

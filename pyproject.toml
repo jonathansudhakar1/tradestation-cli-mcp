@@ -7,7 +7,7 @@ build-backend = "hatchling.build"
 # ─────────────────────────────────────────────────────────────────────────────
 [project]
 name = "tradestation-cli-mcp"
-version = "0.0.1"
+dynamic = ["version"]
 description = "TradeStation v3 Python library + CLI (`ts`) + MCP server (`ts-mcp`)."
 readme = "README.md"
 license = "MIT"
