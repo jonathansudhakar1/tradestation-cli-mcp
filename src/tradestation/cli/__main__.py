@@ -2,4 +2,4 @@
 
 from tradestation.cli.app import main
 
-main()
+main()  # pragma: no cover

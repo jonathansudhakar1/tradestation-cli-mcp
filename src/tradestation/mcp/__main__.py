@@ -2,4 +2,4 @@
 
 from tradestation.mcp.server import main
 
-main()
+main()  # pragma: no cover

@@ -614,8 +614,10 @@ class TestTransportClose:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.asyncio
 class TestAdditionalCoverage:
+    # No class-level asyncio mark: this class mixes sync and async tests, and
+    # asyncio_mode=auto already handles the async ones. (A class-level mark
+    # would warn on the sync methods.)
     @respx.mock
     async def test_request_id_in_error_payload(self) -> None:
         """X-Request-Id header should be captured in error."""
