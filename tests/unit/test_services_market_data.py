@@ -449,7 +449,7 @@ class TestCrypto:
     @pytest.mark.asyncio
     @respx.mock
     async def test_list_crypto_pairs(self) -> None:
-        respx.get(f"{_BASE}/marketdata/crypto/symbolnames").mock(
+        respx.get(f"{_BASE}/marketdata/symbollists/cryptopairs/symbolnames").mock(
             return_value=httpx.Response(
                 200, json={"SymbolNames": ["BTCUSD", "ETHUSD", "LTCUSD"]}
             )

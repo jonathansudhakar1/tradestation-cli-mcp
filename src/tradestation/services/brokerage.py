@@ -92,7 +92,7 @@ class BrokerageService(BaseService):
         Returns:
             A list of beginning-of-day balance models.
         """
-        path = f"/brokerage/accounts/{_join(account_ids)}/balances/bod"
+        path = f"/brokerage/accounts/{_join(account_ids)}/bodbalances"
         raw = await self._transport.request("GET", path)
         return parse_bod_balances_response(raw)
 

@@ -38,6 +38,18 @@ def _trade_action(side: Side) -> str:
     return side.value.replace("_", "")
 
 
+def _fmt_qty(quantity: float) -> str:
+    """Format an order quantity for the API.
+
+    Whole numbers must be sent without a trailing ``.0`` (the API rejects
+    ``"1.0"`` for equity orders), while fractional quantities (crypto) keep
+    their decimals.
+    """
+    if quantity == int(quantity):
+        return str(int(quantity))
+    return repr(quantity)
+
+
 # ---------------------------------------------------------------------------
 # Request models
 # ---------------------------------------------------------------------------
@@ -74,7 +86,7 @@ class OrderRequest(BaseModel):
         body: dict[str, Any] = {
             "AccountID": self.account_id,
             "Symbol": self.symbol,
-            "Quantity": str(self.quantity),
+            "Quantity": _fmt_qty(self.quantity),
             "OrderType": self.order_type.value,
             "TradeAction": _trade_action(self.side),
             "TimeInForce": tif,

@@ -140,7 +140,7 @@ class TestBalances:
     @pytest.mark.asyncio
     @respx.mock
     async def test_bod_balances(self) -> None:
-        respx.get(f"{_BASE}/brokerage/accounts/11111111/balances/bod").mock(
+        respx.get(f"{_BASE}/brokerage/accounts/11111111/bodbalances").mock(
             return_value=httpx.Response(
                 200,
                 json={"BODBalances": [{"AccountID": "11111111", "Equity": "120000.00"}]},

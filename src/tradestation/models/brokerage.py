@@ -190,16 +190,25 @@ class HistoricalOrder(Order):
 
 
 class Wallet(_TSModel):
-    """A crypto wallet balance (C9)."""
+    """A crypto wallet balance (C9).
+
+    Field aliases match the live v3 response (BalanceAvailableForTrading,
+    BalanceAvailableForWithdrawal, UnrealizedProfitLossAccountCurrency, …).
+    """
 
     account_id: str | None = Field(None, alias="AccountID")
     currency: str | None = Field(None, alias="Currency")
     balance: float | None = Field(None, alias="Balance")
-    available_balance: float | None = Field(None, alias="AvailableBalance")
-    held_balance: float | None = Field(None, alias="HeldForOpenOrdersBalance")
-    unsettled_balance: float | None = Field(None, alias="UnsettledBalance")
-    transfer_in: float | None = Field(None, alias="TransferInBalance")
-    transfer_out: float | None = Field(None, alias="TransferOutBalance")
+    available_for_trading: float | None = Field(
+        None, alias="BalanceAvailableForTrading"
+    )
+    available_for_withdrawal: float | None = Field(
+        None, alias="BalanceAvailableForWithdrawal"
+    )
+    unrealized_profit_loss: float | None = Field(
+        None, alias="UnrealizedProfitLossAccountCurrency"
+    )
+    status: str | None = Field(None, alias="Status")
 
 
 # ---------------------------------------------------------------------------

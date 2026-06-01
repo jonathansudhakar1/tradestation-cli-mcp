@@ -51,7 +51,7 @@ class TestRequestSerialisation:
         body = req.to_api()
         assert body["AccountID"] == "11111111"
         assert body["Symbol"] == "AAPL"
-        assert body["Quantity"] == "100.0"
+        assert body["Quantity"] == "100"
         assert body["OrderType"] == "Market"
         assert body["TradeAction"] == "BUY"
         assert body["TimeInForce"] == {"Duration": "DAY"}

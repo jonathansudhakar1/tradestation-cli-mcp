@@ -191,7 +191,9 @@ class MarketDataService(BaseService):
         Returns:
             A list of crypto symbol-name strings (e.g. ``["BTCUSD", "ETHUSD"]``).
         """
-        raw = await self._transport.request("GET", "/marketdata/crypto/symbolnames")
+        raw = await self._transport.request(
+            "GET", "/marketdata/symbollists/cryptopairs/symbolnames"
+        )
         names = raw.get("SymbolNames") or raw.get("Cryptocurrencies") or []
         return [str(n) for n in names] if isinstance(names, list) else []
 
