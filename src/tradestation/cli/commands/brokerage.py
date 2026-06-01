@@ -324,3 +324,101 @@ def wallets_cmd(
     ids = _split_ids(account_ids)
     wallets = _run(cli, cli.client.brokerage.get_wallets(ids))
     _emit(cli, wallets, table_fn=_table_wallets, operation="Wallets", scope=",".join(ids))
+
+
+# ---------------------------------------------------------------------------
+# Streaming (C10-C13) — `ts brokerage stream ...`
+# ---------------------------------------------------------------------------
+
+stream_app = typer.Typer(name="stream", help="Live account streaming.", no_args_is_help=True)
+app.add_typer(stream_app, name="stream")
+
+_MaxOpt = Annotated[int, typer.Option("--max", help="Stop after N frames (0 = unlimited).")]
+_ForOpt = Annotated[float, typer.Option("--for", help="Stop after N seconds (0 = unlimited).")]
+
+
+async def _consume(cli: CLIContext, agen: Any, *, max_frames: int, for_seconds: float) -> int:
+    import contextlib
+
+    count = 0
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + for_seconds if for_seconds > 0 else None
+    with contextlib.suppress(KeyboardInterrupt):
+        async for ev in agen:
+            sys.stdout.write(json.dumps(ev.raw or {}, default=str) + "\n")
+            sys.stdout.flush()
+            count += 1
+            if max_frames and count >= max_frames:
+                break
+            if deadline and loop.time() >= deadline:
+                break
+    return count
+
+
+@stream_app.command(name="orders")
+def stream_orders_cmd(
+    ctx: typer.Context,
+    account_ids: Annotated[list[str], typer.Argument(help="Account ID(s).")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live order events. Maps to: C10."""
+    cli = CLIContext.from_typer(ctx)
+    ids = _split_ids(account_ids)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume(
+                cli,
+                ts.brokerage.stream_orders(ids),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    _run(cli, _go())
+
+
+@stream_app.command(name="positions")
+def stream_positions_cmd(
+    ctx: typer.Context,
+    account_ids: Annotated[list[str], typer.Argument(help="Account ID(s).")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live position updates. Maps to: C12."""
+    cli = CLIContext.from_typer(ctx)
+    ids = _split_ids(account_ids)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume(
+                cli,
+                ts.brokerage.stream_positions(ids),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    _run(cli, _go())
+
+
+@stream_app.command(name="wallets")
+def stream_wallets_cmd(
+    ctx: typer.Context,
+    account_ids: Annotated[list[str], typer.Argument(help="Account ID(s).")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live wallet updates. Maps to: C13."""
+    cli = CLIContext.from_typer(ctx)
+    ids = _split_ids(account_ids)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume(
+                cli,
+                ts.brokerage.stream_wallets(ids),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    _run(cli, _go())

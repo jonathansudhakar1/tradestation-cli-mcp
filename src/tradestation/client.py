@@ -6,6 +6,8 @@ and §"Design principles" for the sync-over-async rationale.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import anyio
 
 from tradestation.credentials import Credentials, from_env, load
@@ -14,6 +16,9 @@ from tradestation.services.brokerage import BrokerageService
 from tradestation.services.market_data import MarketDataService
 from tradestation.services.order_execution import OrderExecutionService
 from tradestation.transport import Transport
+
+if TYPE_CHECKING:
+    from tradestation.async_client import AsyncTradeStationClient
 
 
 class TradeStationClient:
@@ -202,6 +207,29 @@ class TradeStationClient:
         return self._order_execution
 
     # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Async bridge
+    # ------------------------------------------------------------------
+
+    def as_async(self) -> AsyncTradeStationClient:
+        """Return an :class:`AsyncTradeStationClient` sharing these credentials.
+
+        Useful for streaming from otherwise-synchronous code (e.g. the CLI),
+        which must drive an ``async for`` loop::
+
+            async with sync_client.as_async() as ts:
+                async for event in ts.market_data.stream_quotes(["AAPL"]):
+                    ...
+        """
+        from tradestation.async_client import AsyncTradeStationClient
+
+        return AsyncTradeStationClient(
+            self._credentials,
+            timeout=self._timeout,
+            retries=self._retries,
+            user_agent=self._user_agent,
+        )
+
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------

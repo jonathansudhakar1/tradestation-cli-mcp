@@ -395,3 +395,96 @@ def opt_spread_types_cmd(ctx: typer.Context) -> None:
     else:
         for t in types:
             sys.stdout.write(json.dumps(t.model_dump(by_alias=False), default=str) + "\n")
+
+
+# ---------------------------------------------------------------------------
+# Streaming (B12-B17) — `ts md stream ...`
+# ---------------------------------------------------------------------------
+
+stream_app = typer.Typer(name="stream", help="Live streaming market data.", no_args_is_help=True)
+app.add_typer(stream_app, name="stream")
+
+
+async def _consume_stream(
+    cli: CLIContext, agen: Any, *, max_frames: int, for_seconds: float
+) -> int:
+    """Print stream events as they arrive, bounded by --max / --for. Returns count."""
+    import contextlib
+
+    count = 0
+    loop = asyncio.get_event_loop()
+    deadline = loop.time() + for_seconds if for_seconds > 0 else None
+    with contextlib.suppress(KeyboardInterrupt):
+        async for ev in agen:
+            data = ev.raw or {}
+            if cli.output_mode == OutputMode.TABLE:
+                sym = data.get("Symbol") or data.get("OrderID") or ""
+                cli.console.print(f"[ts.symbol]{sym}[/ts.symbol]  {json.dumps(data, default=str)}")
+            else:
+                sys.stdout.write(json.dumps(data, default=str) + "\n")
+                sys.stdout.flush()
+            count += 1
+            if max_frames and count >= max_frames:
+                break
+            if deadline and loop.time() >= deadline:
+                break
+    return count
+
+
+_MaxOpt = Annotated[int, typer.Option("--max", help="Stop after N frames (0 = unlimited).")]
+_ForOpt = Annotated[float, typer.Option("--for", help="Stop after N seconds (0 = unlimited).")]
+
+
+@stream_app.command(name="quotes")
+def stream_quotes_cmd(
+    ctx: typer.Context,
+    symbols: Annotated[list[str], typer.Argument(help="Symbol(s).")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live quote updates. Ctrl-C to stop.
+
+    Maps to: B13 — ``GET /v3/marketdata/stream/quotes/{symbols}``
+    """
+    cli = CLIContext.from_typer(ctx)
+    syms = [s.strip() for raw in symbols for s in raw.split(",") if s.strip()]
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume_stream(
+                cli,
+                ts.market_data.stream_quotes(syms),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    n = _run_md(cli, _go())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print(f"[ts.ok]✔ stream closed — {n} frames[/ts.ok]")
+
+
+@stream_app.command(name="bars")
+def stream_bars_cmd(
+    ctx: typer.Context,
+    symbol: Annotated[str, typer.Argument(help="Symbol.")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live bar updates. Ctrl-C to stop.
+
+    Maps to: B12 — ``GET /v3/marketdata/stream/barcharts/{symbol}``
+    """
+    cli = CLIContext.from_typer(ctx)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume_stream(
+                cli,
+                ts.market_data.stream_bars(symbol),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    n = _run_md(cli, _go())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print(f"[ts.ok]✔ stream closed — {n} frames[/ts.ok]")
