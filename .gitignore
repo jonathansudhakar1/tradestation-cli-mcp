@@ -47,9 +47,9 @@ coverage.xml
 .pytype/
 .pyre/
 
-# Virtual envs
-.venv/
-venv/
+# Virtual envs (broad glob — covers .venv, .venv-integration, .venv-39, etc.)
+.venv*/
+venv*/
 ENV/
 env/
 
