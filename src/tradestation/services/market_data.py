@@ -15,12 +15,27 @@ from typing import Any
 from tradestation.enums import BarUnit, MarketSession
 from tradestation.models.market_data import (
     Bar,
+    OptionExpiration,
+    OptionSpreadType,
     Quote,
+    Symbol,
+    SymbolList,
     parse_bars_response,
+    parse_option_expirations_response,
+    parse_option_spread_types_response,
     parse_quotes_response,
+    parse_symbol_lists_response,
+    parse_symbols_response,
 )
 from tradestation.services.base import BaseService
 from tradestation.streaming import StreamEvent
+
+
+def _split_symbols(symbols: list[str] | str) -> list[str]:
+    """Normalise a symbol argument (list or CSV string) to a list."""
+    if isinstance(symbols, str):
+        return [s.strip() for s in symbols.split(",") if s.strip()]
+    return list(symbols)
 
 
 class MarketDataService(BaseService):
@@ -108,101 +123,100 @@ class MarketDataService(BaseService):
         raw = await self._transport.request("GET", path)
         return parse_quotes_response(raw)
 
-    async def get_symbols(self, symbols: list[str]) -> Any:
+    async def get_symbols(self, symbols: list[str] | str) -> list[Symbol]:
         """Fetch symbol metadata for one or more symbols.
 
-        Maps to: B3 GET /marketdata/symbols/{symbols}
+        Maps to: B3 GET /v3/marketdata/symbols/{symbols}
 
         Args:
-            symbols: List of instrument symbols.
+            symbols: Instrument symbols (list or comma-separated string).
 
         Returns:
-            Parsed symbol-detail response (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            A list of :class:`~tradestation.models.market_data.Symbol` models.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B3")
+        syms = _split_symbols(symbols)
+        raw = await self._transport.request(
+            "GET", "/marketdata/symbols/" + ",".join(syms)
+        )
+        return parse_symbols_response(raw)
 
-    async def list_symbol_lists(self) -> Any:
+    async def list_symbol_lists(self) -> list[SymbolList]:
         """List the authenticated user's symbol lists.
 
-        Maps to: B4 GET /marketdata/symbollists
+        Maps to: B4 GET /v3/marketdata/symbollists
 
         Returns:
-            Parsed symbol-list collection (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            A list of :class:`~tradestation.models.market_data.SymbolList` models.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B4")
+        raw = await self._transport.request("GET", "/marketdata/symbollists")
+        return parse_symbol_lists_response(raw)
 
-    async def get_symbol_list(self, list_id: str) -> Any:
+    async def get_symbol_list(self, list_id: str) -> SymbolList:
         """Fetch a single symbol list by ID.
 
-        Maps to: B5 GET /marketdata/symbollists/{symbolListID}
+        Maps to: B5 GET /v3/marketdata/symbollists/{symbolListID}
 
         Args:
             list_id: Symbol list identifier.
 
         Returns:
-            Parsed symbol-list detail (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            The :class:`~tradestation.models.market_data.SymbolList`.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B5")
+        raw = await self._transport.request(
+            "GET", f"/marketdata/symbollists/{list_id}"
+        )
+        return SymbolList.model_validate(raw)
 
-    async def get_symbol_list_symbols(self, list_id: str) -> Any:
+    async def get_symbol_list_symbols(self, list_id: str) -> list[Symbol]:
         """Fetch the symbols inside a symbol list.
 
-        Maps to: B6 GET /marketdata/symbollists/{symbolListID}/symbols
+        Maps to: B6 GET /v3/marketdata/symbollists/{symbolListID}/symbols
 
         Args:
             list_id: Symbol list identifier.
 
         Returns:
-            Parsed symbol collection (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            A list of :class:`~tradestation.models.market_data.Symbol` models.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B6")
+        raw = await self._transport.request(
+            "GET", f"/marketdata/symbollists/{list_id}/symbols"
+        )
+        return parse_symbols_response(raw)
 
-    async def list_crypto_pairs(self) -> Any:
+    async def list_crypto_pairs(self) -> list[str]:
         """List all supported cryptocurrency trading pairs.
 
-        Maps to: B7 GET /marketdata/crypto/symbolnames
+        Maps to: B7 GET /v3/marketdata/crypto/symbolnames
 
         Returns:
-            Parsed crypto-pair list (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            A list of crypto symbol-name strings (e.g. ``["BTCUSD", "ETHUSD"]``).
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B7")
+        raw = await self._transport.request("GET", "/marketdata/crypto/symbolnames")
+        names = raw.get("SymbolNames") or raw.get("Cryptocurrencies") or []
+        return [str(n) for n in names] if isinstance(names, list) else []
 
     async def get_option_expirations(
         self,
         underlying: str,
         *,
         strike: float | None = None,
-    ) -> Any:
+    ) -> list[OptionExpiration]:
         """Fetch available option expiration dates for an underlying.
 
-        Maps to: B8 GET /marketdata/options/expirations/{underlying}
+        Maps to: B8 GET /v3/marketdata/options/expirations/{underlying}
 
         Args:
             underlying: Underlying symbol (e.g. ``"AAPL"``).
             strike: Optional strike price filter.
 
         Returns:
-            Parsed expirations response (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            A list of :class:`~tradestation.models.market_data.OptionExpiration`.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B8")
+        params = {"strikePrice": strike} if strike is not None else None
+        raw = await self._transport.request(
+            "GET", f"/marketdata/options/expirations/{underlying}", params=params
+        )
+        return parse_option_expirations_response(raw)
 
     async def get_option_strikes(
         self,
@@ -210,10 +224,14 @@ class MarketDataService(BaseService):
         *,
         expiration: str | None = None,
         spread_type: str | None = None,
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Fetch available option strike prices for an underlying.
 
-        Maps to: B9 GET /marketdata/options/strikes/{underlying}
+        Maps to: B9 GET /v3/marketdata/options/strikes/{underlying}
+
+        The response is ``{"SpreadType": "...", "Strikes": [[...], ...]}`` —
+        each inner list is a strike grouping. Returned as a raw dict so callers
+        can interpret the nested structure directly.
 
         Args:
             underlying: Underlying symbol.
@@ -221,47 +239,52 @@ class MarketDataService(BaseService):
             spread_type: Spread type filter.
 
         Returns:
-            Parsed strikes response (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            The raw strikes response dict.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B9")
+        params: dict[str, Any] = {}
+        if expiration is not None:
+            params["expiration"] = expiration
+        if spread_type is not None:
+            params["spreadType"] = spread_type
+        return await self._transport.request(
+            "GET",
+            f"/marketdata/options/strikes/{underlying}",
+            params=params or None,
+        )
 
-    async def list_option_spread_types(self) -> Any:
+    async def list_option_spread_types(self) -> list[OptionSpreadType]:
         """List all supported option spread types.
 
-        Maps to: B10 GET /marketdata/options/spreadtypes
+        Maps to: B10 GET /v3/marketdata/options/spreadtypes
 
         Returns:
-            Parsed spread-types list (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            A list of :class:`~tradestation.models.market_data.OptionSpreadType`.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B10")
+        raw = await self._transport.request("GET", "/marketdata/options/spreadtypes")
+        return parse_option_spread_types_response(raw)
 
     async def option_risk_reward(
         self,
         legs: list[dict[str, Any]],
         *,
         entry: float,
-    ) -> Any:
+    ) -> dict[str, Any]:
         """Compute risk/reward analysis for a multi-leg option position.
 
-        Maps to: B11 POST /marketdata/options/riskreward
+        Maps to: B11 POST /v3/marketdata/options/riskreward
 
         Args:
-            legs: List of option legs (structure TBD — Phase 2).
-            entry: Net entry price for the spread.
+            legs: Option legs, each like
+                ``{"Symbol": "AAPL 260620C200", "Ratio": 1, "OpenPrice": "5.40"}``.
+            entry: Net entry price (``SpreadPrice``) for the spread.
 
         Returns:
-            Parsed risk/reward response (model TBD — Phase 2).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            The raw risk/reward response dict (MaxGain, MaxLoss, RiskRewardRatio…).
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B11")
+        body = {"SpreadPrice": str(entry), "Legs": legs}
+        return await self._transport.request(
+            "POST", "/marketdata/options/riskreward", json=body
+        )
 
     # ------------------------------------------------------------------
     # B.2 — Streaming endpoints

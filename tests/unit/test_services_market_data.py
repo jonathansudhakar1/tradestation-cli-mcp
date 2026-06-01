@@ -373,3 +373,170 @@ class TestGetBars:
         async with httpx.AsyncClient() as http:
             svc = MarketDataService(_make_transport(http))
             assert await svc.get_bars("BTCUSD") == []
+
+
+# ---------------------------------------------------------------------------
+# B3-B11 — symbols, lists, crypto, options
+# ---------------------------------------------------------------------------
+
+
+class TestSymbolsAndLists:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_get_symbols(self) -> None:
+        respx.get(f"{_BASE}/marketdata/symbols/AAPL,ESM26").mock(
+            return_value=httpx.Response(
+                200,
+                json={"Symbols": [
+                    {"Symbol": "AAPL", "AssetType": "STOCK", "Exchange": "NASDAQ",
+                     "Currency": "USD"},
+                    {"Symbol": "ESM26", "AssetType": "FUTURE", "Root": "ES",
+                     "Currency": "USD"},
+                ], "Errors": []},
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            syms = await svc.get_symbols(["AAPL", "ESM26"])
+        assert len(syms) == 2
+        assert syms[1].asset_type == "FUTURE"
+        assert syms[1].root == "ES"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_list_symbol_lists(self) -> None:
+        respx.get(f"{_BASE}/marketdata/symbollists").mock(
+            return_value=httpx.Response(
+                200,
+                json={"SymbolLists": [
+                    {"SymbolListID": "abc", "Name": "Faves", "Count": 12},
+                ]},
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            lists = await svc.list_symbol_lists()
+        assert lists[0].symbol_list_id == "abc"
+        assert lists[0].count == 12
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_get_symbol_list(self) -> None:
+        respx.get(f"{_BASE}/marketdata/symbollists/abc").mock(
+            return_value=httpx.Response(200, json={"SymbolListID": "abc", "Name": "Faves"})
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            sl = await svc.get_symbol_list("abc")
+        assert sl is not None
+        assert sl.name == "Faves"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_get_symbol_list_symbols(self) -> None:
+        respx.get(f"{_BASE}/marketdata/symbollists/abc/symbols").mock(
+            return_value=httpx.Response(
+                200, json={"Symbols": [{"Symbol": "AAPL"}, {"Symbol": "MSFT"}]}
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            syms = await svc.get_symbol_list_symbols("abc")
+        assert [s.symbol for s in syms] == ["AAPL", "MSFT"]
+
+
+class TestCrypto:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_list_crypto_pairs(self) -> None:
+        respx.get(f"{_BASE}/marketdata/crypto/symbolnames").mock(
+            return_value=httpx.Response(
+                200, json={"SymbolNames": ["BTCUSD", "ETHUSD", "LTCUSD"]}
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            pairs = await svc.list_crypto_pairs()
+        assert "BTCUSD" in pairs
+        assert len(pairs) == 3
+
+
+class TestOptions:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_option_expirations(self) -> None:
+        route = respx.get(f"{_BASE}/marketdata/options/expirations/AAPL").mock(
+            return_value=httpx.Response(
+                200,
+                json={"Expirations": [
+                    {"Date": "2026-06-19T00:00:00Z", "Type": "Monthly"},
+                    {"Date": "2026-06-26T00:00:00Z", "Type": "Weekly"},
+                ]},
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            exps = await svc.get_option_expirations("AAPL", strike=200)
+        assert route.calls.last.request.url.params["strikePrice"] == "200"
+        assert len(exps) == 2
+        assert exps[0].type == "Monthly"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_option_strikes(self) -> None:
+        route = respx.get(f"{_BASE}/marketdata/options/strikes/AAPL").mock(
+            return_value=httpx.Response(
+                200,
+                json={"SpreadType": "Single", "Strikes": [["190"], ["195"], ["200"]]},
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            res = await svc.get_option_strikes(
+                "AAPL", expiration="2026-06-19", spread_type="Single"
+            )
+        assert route.calls.last.request.url.params["expiration"] == "2026-06-19"
+        assert res["SpreadType"] == "Single"
+        assert len(res["Strikes"]) == 3
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_option_spread_types(self) -> None:
+        respx.get(f"{_BASE}/marketdata/options/spreadtypes").mock(
+            return_value=httpx.Response(
+                200,
+                json={"SpreadTypes": [
+                    {"Name": "Single", "StrikeInterval": False, "ExpirationInterval": False},
+                    {"Name": "Vertical", "StrikeInterval": True, "ExpirationInterval": False},
+                ]},
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            types = await svc.list_option_spread_types()
+        assert [t.name for t in types] == ["Single", "Vertical"]
+        assert types[1].strike_interval is True
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_option_risk_reward(self) -> None:
+        route = respx.post(f"{_BASE}/marketdata/options/riskreward").mock(
+            return_value=httpx.Response(
+                200,
+                json={"MaxGain": "330", "MaxLoss": "170", "RiskRewardRatio": "1.94",
+                      "Commission": "0"},
+            )
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            res = await svc.option_risk_reward(
+                [{"Symbol": "AAPL 260620C200", "Ratio": 1, "OpenPrice": "5.40"},
+                 {"Symbol": "AAPL 260620C210", "Ratio": -1, "OpenPrice": "2.10"}],
+                entry=3.30,
+            )
+        assert route.called
+        import json as _json
+        body = _json.loads(route.calls.last.request.content)
+        assert body["SpreadPrice"] == "3.3"
+        assert len(body["Legs"]) == 2
+        assert res["MaxGain"] == "330"

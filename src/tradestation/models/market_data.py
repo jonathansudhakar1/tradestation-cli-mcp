@@ -274,3 +274,106 @@ def parse_quotes_response(raw: dict[str, Any]) -> list[Quote]:
         result.append(q)
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# B3 — Symbol details
+# ---------------------------------------------------------------------------
+
+
+class Symbol(BaseModel):
+    """Symbol metadata (B3). Forgiving — covers equities, futures, options, crypto."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    symbol: str | None = Field(None, alias="Symbol")
+    name: str | None = Field(None, alias="Name")
+    description: str | None = Field(None, alias="Description")
+    asset_type: str | None = Field(None, alias="AssetType")
+    exchange: str | None = Field(None, alias="Exchange")
+    currency: str | None = Field(None, alias="Currency")
+    country: str | None = Field(None, alias="Country")
+    root: str | None = Field(None, alias="Root")
+    underlying: str | None = Field(None, alias="Underlying")
+    expiration_date: str | None = Field(None, alias="ExpirationDate")
+    option_type: str | None = Field(None, alias="OptionType")
+    strike_price: float | None = Field(None, alias="StrikePrice")
+    price_format: dict[str, Any] | None = Field(None, alias="PriceFormat")
+    quantity_format: dict[str, Any] | None = Field(None, alias="QuantityFormat")
+
+
+def parse_symbols_response(raw: Any) -> list[Symbol]:
+    """Parse B3 ``{"Symbols": [...], "Errors": [...]}``."""
+    items = raw.get("Symbols", []) if isinstance(raw, dict) else raw
+    if not isinstance(items, list):
+        return []
+    return [Symbol.model_validate(s) for s in items if isinstance(s, dict)]
+
+
+# ---------------------------------------------------------------------------
+# B4 / B5 / B6 — Symbol lists
+# ---------------------------------------------------------------------------
+
+
+class SymbolList(BaseModel):
+    """A user symbol list (B4 / B5)."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    symbol_list_id: str | None = Field(None, alias="SymbolListID")
+    name: str | None = Field(None, alias="Name")
+    description: str | None = Field(None, alias="Description")
+    count: int | None = Field(None, alias="Count")
+
+
+def parse_symbol_lists_response(raw: Any) -> list[SymbolList]:
+    """Parse B4 ``{"SymbolLists": [...]}``."""
+    items = raw.get("SymbolLists", []) if isinstance(raw, dict) else raw
+    if not isinstance(items, list):
+        return []
+    return [SymbolList.model_validate(s) for s in items if isinstance(s, dict)]
+
+
+# ---------------------------------------------------------------------------
+# B8 — Option expirations
+# ---------------------------------------------------------------------------
+
+
+class OptionExpiration(BaseModel):
+    """An option expiration entry (B8)."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    date: str | None = Field(None, alias="Date")
+    type: str | None = Field(None, alias="Type")
+
+
+def parse_option_expirations_response(raw: Any) -> list[OptionExpiration]:
+    """Parse B8 ``{"Expirations": [...]}``."""
+    items = raw.get("Expirations", []) if isinstance(raw, dict) else raw
+    if not isinstance(items, list):
+        return []
+    return [OptionExpiration.model_validate(e) for e in items if isinstance(e, dict)]
+
+
+# ---------------------------------------------------------------------------
+# B10 — Option spread types
+# ---------------------------------------------------------------------------
+
+
+class OptionSpreadType(BaseModel):
+    """An option spread type (B10)."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    name: str | None = Field(None, alias="Name")
+    strike_interval: bool | None = Field(None, alias="StrikeInterval")
+    expiration_interval: bool | None = Field(None, alias="ExpirationInterval")
+
+
+def parse_option_spread_types_response(raw: Any) -> list[OptionSpreadType]:
+    """Parse B10 ``{"SpreadTypes": [...]}``."""
+    items = raw.get("SpreadTypes", []) if isinstance(raw, dict) else raw
+    if not isinstance(items, list):
+        return []
+    return [OptionSpreadType.model_validate(s) for s in items if isinstance(s, dict)]
