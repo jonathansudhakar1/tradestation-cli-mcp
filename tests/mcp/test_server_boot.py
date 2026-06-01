@@ -89,23 +89,6 @@ def test_build_server_no_client_still_works() -> None:
     assert isinstance(server, FastMCP)
 
 
-def test_load_client_returns_none_when_not_implemented() -> None:
-    """_load_client returns None when credentials raise NotImplementedError."""
-    from tradestation.mcp.server import _load_client
-
-    # load_credentials raises NotImplementedError at this phase
-    client = _load_client(profile="default", env="sim", allow_env_fallback=False)
-    assert client is None
-
-
-def test_load_client_with_profile_returns_none() -> None:
-    """_load_client with profile returns None when from_profile raises NotImplementedError."""
-    from tradestation.mcp.server import _load_client
-
-    client = _load_client(profile="paper", env="sim", allow_env_fallback=False)
-    assert client is None
-
-
 def test_build_parser_returns_parser() -> None:
     """_build_parser returns an ArgumentParser with all expected args."""
     from tradestation.mcp.server import _build_parser
@@ -145,8 +128,8 @@ def test_load_client_no_credentials_exits_3() -> None:
         text=True,
         env={**__import__("os").environ, "TS_CREDENTIALS": "/tmp/nonexistent-creds-xyz"},
     )
-    # Either NotImplementedError (Phase 2 not done) = exit 1, or NoCredentialsError = exit 3
-    assert result.returncode in (0, 1, 3)
+    # NoCredentialsError = exit 3 (auth error per docs/04 exit codes)
+    assert result.returncode == 3
 
 
 def test_build_parser_all_flags() -> None:

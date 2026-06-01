@@ -133,6 +133,10 @@ def _default_credentials_path() -> Path:
     )
 
 
+# Public alias for consumers (CLI, MCP, downstream code).
+default_credentials_path = _default_credentials_path
+
+
 def _lock_path(creds_path: Path) -> Path:
     return creds_path.with_suffix(".lock")
 
