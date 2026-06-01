@@ -259,11 +259,15 @@ def table_orders(orders: Sequence[dict[str, Any]]) -> Table:
                 time_str = str(opened_raw)[:8]
         else:
             time_str = ""
-        symbol = str(o.get("Symbol", ""))
-        side = str(o.get("Side", ""))
+        # Symbol / side / qty live in the first leg for TS v3 orders;
+        # fall back to top-level fields when present.
+        legs = o.get("Legs") or []
+        leg0: dict[str, Any] = legs[0] if legs and isinstance(legs[0], dict) else {}
+        symbol = str(o.get("Symbol") or leg0.get("Symbol", ""))
+        side = str(o.get("Side") or leg0.get("BuyOrSell", ""))
         order_type = str(o.get("OrderType", ""))
-        qty = str(o.get("Quantity", ""))
-        filled = str(o.get("FilledQuantity", "0"))
+        qty = str(o.get("Quantity") or leg0.get("QuantityOrdered", ""))
+        filled = str(o.get("FilledQuantity") or leg0.get("ExecQuantity", "0"))
         # Price — limit or stop
         price = o.get("LimitPrice", o.get("StopPrice", ""))
         price_str = str(price) if price else "MKT"
