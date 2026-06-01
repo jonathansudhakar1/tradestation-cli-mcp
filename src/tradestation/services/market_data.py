@@ -28,7 +28,7 @@ from tradestation.models.market_data import (
     parse_symbols_response,
 )
 from tradestation.services.base import BaseService
-from tradestation.streaming import StreamEvent
+from tradestation.streaming import StreamEvent, stream_events
 
 
 def _split_symbols(symbols: list[str] | str) -> list[str]:
@@ -304,12 +304,19 @@ class MarketDataService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' B12")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        params = {
+            "interval": interval,
+            "unit": unit.value,
+            "sessiontemplate": session_template.value,
+        }
+        async for event in stream_events(
+            self._transport,
+            f"/marketdata/stream/barcharts/{symbol}",
+            params=params,
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_quotes(
         self,
@@ -327,12 +334,13 @@ class MarketDataService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' B13")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        async for event in stream_events(
+            self._transport,
+            "/marketdata/stream/quotes/" + ",".join(_split_symbols(symbols)),
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_depth_quotes(
         self,
@@ -350,12 +358,13 @@ class MarketDataService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' B14")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        async for event in stream_events(
+            self._transport,
+            f"/marketdata/stream/marketdepth/quotes/{symbol}",
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_depth_aggregates(
         self,
@@ -373,12 +382,13 @@ class MarketDataService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' B15")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        async for event in stream_events(
+            self._transport,
+            f"/marketdata/stream/marketdepth/aggregates/{symbol}",
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_option_chain(
         self,
@@ -398,12 +408,15 @@ class MarketDataService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' B16")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        params = {"expiration": expiration} if expiration else None
+        async for event in stream_events(
+            self._transport,
+            f"/marketdata/stream/options/chains/{underlying}",
+            params=params,
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_option_quotes(
         self,
@@ -421,9 +434,16 @@ class MarketDataService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' B17")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        params: dict[str, Any] = {}
+        for i, leg in enumerate(legs):
+            sym = leg.get("Symbol") or leg.get("symbol")
+            if sym:
+                params[f"legs[{i}].Symbol"] = sym
+        async for event in stream_events(
+            self._transport,
+            "/marketdata/stream/options/quotes",
+            params=params or None,
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event

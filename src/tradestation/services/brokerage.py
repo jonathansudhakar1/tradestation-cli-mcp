@@ -29,7 +29,7 @@ from tradestation.models.brokerage import (
     parse_wallets_response,
 )
 from tradestation.services.base import BaseService
-from tradestation.streaming import StreamEvent
+from tradestation.streaming import StreamEvent, stream_events
 
 
 def _join(ids: list[str] | str) -> str:
@@ -223,12 +223,13 @@ class BrokerageService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' C10")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        async for event in stream_events(
+            self._transport,
+            f"/brokerage/stream/accounts/{_join(account_ids)}/orders",
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_orders_by_id(
         self,
@@ -248,12 +249,13 @@ class BrokerageService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' C11")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        async for event in stream_events(
+            self._transport,
+            f"/brokerage/stream/accounts/{_join(account_ids)}/orders/{_join(order_ids)}",
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_positions(
         self,
@@ -271,12 +273,13 @@ class BrokerageService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' C12")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        async for event in stream_events(
+            self._transport,
+            f"/brokerage/stream/accounts/{_join(account_ids)}/positions",
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event
 
     async def stream_wallets(
         self,
@@ -294,9 +297,10 @@ class BrokerageService(BaseService):
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Streaming primitives' C13")
-        yield StreamEvent()  # type: ignore[unreachable]  # pragma: no cover
+        async for event in stream_events(
+            self._transport,
+            f"/brokerage/stream/accounts/{_join(account_ids)}/wallets",
+            include_heartbeats=include_heartbeats,
+        ):
+            yield event

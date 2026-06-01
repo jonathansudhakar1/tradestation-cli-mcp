@@ -14,7 +14,16 @@ Implementation: Phase 2.
 
 from __future__ import annotations
 
+import json
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING, Any
+
 from pydantic import BaseModel
+
+from tradestation.errors import StreamError
+
+if TYPE_CHECKING:
+    from tradestation.transport import Transport
 
 
 class StreamEvent(BaseModel):
@@ -34,6 +43,68 @@ class StreamEvent(BaseModel):
             instead.
     """
 
-    raw: dict[str, object] | None = None
+    raw: dict[str, Any] | None = None
     is_heartbeat: bool = False
     error: str | None = None
+
+
+def classify_frame(data: dict[str, Any]) -> StreamEvent:
+    """Classify a decoded stream frame into a :class:`StreamEvent`.
+
+    TradeStation interleaves three kinds of frames into a data stream:
+
+    - **Heartbeats**: ``{"Heartbeat": <n>, "Timestamp": "..."}`` — keep-alives.
+    - **Stream status**: ``{"StreamStatus": "EndSnapshot" | ...}`` — treated as
+      data frames (surfaced raw so callers can react to snapshot boundaries).
+    - **Errors**: ``{"Error": "...", "Message": "..."}`` — surfaced via the
+      ``error`` field (and raised by :func:`stream_events`).
+    - **Data**: anything else — the actual quote / bar / order / position frame.
+    """
+    if "Heartbeat" in data:
+        return StreamEvent(raw=data, is_heartbeat=True)
+    if "Error" in data:
+        msg = str(data.get("Message") or data.get("Error"))
+        return StreamEvent(raw=data, error=msg)
+    return StreamEvent(raw=data)
+
+
+async def stream_events(
+    transport: Transport,
+    path: str,
+    *,
+    params: dict[str, Any] | None = None,
+    include_heartbeats: bool = False,
+) -> AsyncIterator[StreamEvent]:
+    """Open a TradeStation stream and yield typed :class:`StreamEvent` frames.
+
+    Wraps :meth:`Transport.request_stream`, decoding each newline-delimited
+    JSON frame and classifying it. Heartbeats are filtered unless
+    *include_heartbeats* is set. Error frames raise :exc:`StreamError`.
+
+    Args:
+        transport: The shared transport handle.
+        path: Streaming endpoint path (e.g. ``/marketdata/stream/quotes/AAPL``).
+        params: Query-string parameters.
+        include_heartbeats: When ``True``, also yield heartbeat events.
+
+    Yields:
+        :class:`StreamEvent` instances (data frames, optionally heartbeats).
+
+    Raises:
+        tradestation.errors.StreamError: On a server error frame or transport
+            stream failure.
+    """
+    raw_iter = await transport.request_stream(path, params=params)
+    async for line in raw_iter:
+        try:
+            data = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        event = classify_frame(data)
+        if event.error is not None:
+            raise StreamError(event.error, stream_url=path, payload=event.raw)
+        if event.is_heartbeat and not include_heartbeats:
+            continue
+        yield event
