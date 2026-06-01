@@ -21,7 +21,7 @@ import sys
 from collections.abc import Sequence
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 
@@ -231,3 +231,151 @@ def _exit_code(exc: Exception) -> int:
     if isinstance(exc, NetworkError):
         return 1
     return 1
+
+
+# ---------------------------------------------------------------------------
+# B1 — bars
+# ---------------------------------------------------------------------------
+
+
+def _run_md(cli: CLIContext, coro: Any) -> Any:
+    try:
+        return asyncio.run(coro)
+    except Exception as exc:
+        render_error(exc, console=cli.console, verbose=cli.verbose)
+        raise typer.Exit(code=_exit_code(exc)) from exc
+
+
+@app.command(name="bars")
+def bars_cmd(
+    ctx: typer.Context,
+    symbol: Annotated[str, typer.Argument(help="Symbol (e.g. AAPL, @ES, BTCUSD).")],
+    interval: Annotated[int, typer.Option("--interval", help="Bar interval.")] = 1,
+    unit: Annotated[str, typer.Option("--unit", help="Minute/Daily/Weekly/Monthly.")] = "Minute",
+    barsback: Annotated[int, typer.Option("--barsback", help="Number of bars back.")] = 50,
+) -> None:
+    """Historical bar chart data.
+
+    Maps to: B1 — ``GET /v3/marketdata/barcharts/{symbol}``
+
+    Examples::
+
+        ts md bars AAPL --barsback 100
+        ts md bars @ES --unit Daily --barsback 30
+    """
+    from tradestation.enums import BarUnit
+
+    cli = CLIContext.from_typer(ctx)
+    bars = _run_md(
+        cli,
+        cli.client.market_data.get_bars(
+            symbol, interval=interval, unit=BarUnit(unit), barsback=barsback
+        ),
+    )
+    if cli.output_mode == OutputMode.TABLE:
+        from rich import box
+        from rich.table import Table
+
+        now = datetime.now(timezone.utc).strftime("%H:%M:%S")
+        cli.console.print(render_banner(f"Bars {symbol}", f"{len(bars)} bars",
+                                        cli.environment.value, now))
+        tbl = Table(box=box.ROUNDED, header_style="ts.header")
+        for col in ("Time", "Open", "High", "Low", "Close", "Volume"):
+            tbl.add_column(col, justify="right" if col != "Time" else "left",
+                           style="ts.price" if col not in ("Time", "Volume") else None)
+        for b in bars:
+            tbl.add_row(
+                (b.timestamp or "")[:19].replace("T", " "),
+                f"{b.open:,.2f}" if b.open else "",
+                f"{b.high:,.2f}" if b.high else "",
+                f"{b.low:,.2f}" if b.low else "",
+                f"{b.close:,.2f}" if b.close else "",
+                f"{b.total_volume:,}" if b.total_volume else "",
+            )
+        cli.console.print(tbl)
+    else:
+        for b in bars:
+            sys.stdout.write(json.dumps(b.model_dump(by_alias=False), default=str) + "\n")
+
+
+@app.command(name="symbols")
+def symbols_cmd(
+    ctx: typer.Context,
+    symbols: Annotated[list[str], typer.Argument(help="Symbol(s).")],
+) -> None:
+    """Symbol metadata.
+
+    Maps to: B3 — ``GET /v3/marketdata/symbols/{symbols}``
+    """
+    cli = CLIContext.from_typer(ctx)
+    syms = [s.strip() for raw in symbols for s in raw.split(",") if s.strip()]
+    result = _run_md(cli, cli.client.market_data.get_symbols(syms))
+    if cli.output_mode == OutputMode.TABLE:
+        from tradestation.cli.render import panel_symbol_detail
+
+        for s in result:
+            cli.console.print(panel_symbol_detail(s.model_dump(by_alias=True)))
+    else:
+        for s in result:
+            sys.stdout.write(json.dumps(s.model_dump(by_alias=False), default=str) + "\n")
+
+
+crypto_app = typer.Typer(name="crypto", help="Crypto market data.", no_args_is_help=True)
+options_app = typer.Typer(name="options", help="Options market data.", no_args_is_help=True)
+app.add_typer(crypto_app, name="crypto")
+app.add_typer(options_app, name="options")
+
+
+@crypto_app.command(name="pairs")
+def crypto_pairs_cmd(ctx: typer.Context) -> None:
+    """List supported crypto trading pairs.
+
+    Maps to: B7 — ``GET /v3/marketdata/symbollists/cryptopairs/symbolnames``
+    """
+    cli = CLIContext.from_typer(ctx)
+    pairs = _run_md(cli, cli.client.market_data.list_crypto_pairs())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print("[ts.symbol]" + "  ".join(pairs) + "[/ts.symbol]")
+    else:
+        sys.stdout.write(json.dumps(pairs) + "\n")
+
+
+@options_app.command(name="expirations")
+def opt_expirations_cmd(
+    ctx: typer.Context,
+    underlying: Annotated[str, typer.Argument(help="Underlying symbol.")],
+) -> None:
+    """List option expiration dates for an underlying.
+
+    Maps to: B8 — ``GET /v3/marketdata/options/expirations/{underlying}``
+    """
+    cli = CLIContext.from_typer(ctx)
+    exps = _run_md(cli, cli.client.market_data.get_option_expirations(underlying))
+    if cli.output_mode == OutputMode.TABLE:
+        from rich import box
+        from rich.table import Table
+
+        tbl = Table(box=box.ROUNDED, header_style="ts.header")
+        tbl.add_column("Date")
+        tbl.add_column("Type")
+        for e in exps:
+            tbl.add_row((e.date or "")[:10], e.type or "")
+        cli.console.print(tbl)
+    else:
+        for e in exps:
+            sys.stdout.write(json.dumps(e.model_dump(by_alias=False), default=str) + "\n")
+
+
+@options_app.command(name="spread-types")
+def opt_spread_types_cmd(ctx: typer.Context) -> None:
+    """List supported option spread types.
+
+    Maps to: B10 — ``GET /v3/marketdata/options/spreadtypes``
+    """
+    cli = CLIContext.from_typer(ctx)
+    types = _run_md(cli, cli.client.market_data.list_option_spread_types())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print("[ts.symbol]" + "  ".join(t.name or "" for t in types) + "[/ts.symbol]")
+    else:
+        for t in types:
+            sys.stdout.write(json.dumps(t.model_dump(by_alias=False), default=str) + "\n")
