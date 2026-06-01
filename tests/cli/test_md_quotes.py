@@ -142,11 +142,12 @@ class TestMdQuotesTable:
     def test_renders_table_with_expected_columns(self) -> None:
         """Table output includes Symbol, Bid, Ask, and Halted columns.
 
-        Note: the CliRunner uses a narrow terminal so column names may be
-        abbreviated (e.g. "La…" for "Last").  We check for clean exit and
-        the presence of symbols + key unambiguous column names.
+        ``--output table`` is passed explicitly: under a non-TTY runner (CI),
+        output auto-detects to JSONL, so we must force table mode to assert on
+        column headers. The CliRunner uses a narrow terminal so column names
+        may be abbreviated (e.g. "La…" for "Last").
         """
-        result = _run(["md", "quotes", "AAPL", "@ES", "BTCUSD"])
+        result = _run(["--output", "table", "md", "quotes", "AAPL", "@ES", "BTCUSD"])
         assert result.exit_code == 0, result.output
         out = _strip_ansi(result.output)
         # Symbol column always appears full-width
