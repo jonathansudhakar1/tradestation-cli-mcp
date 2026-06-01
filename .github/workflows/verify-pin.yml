@@ -1,0 +1,22 @@
+name: Verify vendor pin
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+jobs:
+  verify-pin:
+    name: "Verify swagger.yaml sha256 pin"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify pin
+        run: python scripts/verify_pin.py

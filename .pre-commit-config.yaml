@@ -1,0 +1,20 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      # Format first, then lint (so the linter sees formatted code)
+      - id: ruff-format
+        args: ["src", "tests", "scripts"]
+      - id: ruff
+        args: ["--fix", "src", "tests", "scripts"]
+
+  - repo: local
+    hooks:
+      - id: no-env-staged
+        name: Prevent .env from being committed
+        language: fail
+        entry: >
+          .env file must NOT be staged — it contains secrets.
+          Use .env.example for documentation.
+        files: ^\.env$
+        types: [file]
