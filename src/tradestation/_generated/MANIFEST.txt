@@ -1,0 +1,10 @@
+generated_at:    2026-06-01T16:13:54Z
+generator:       datamodel-code-generator 0.25.9
+source:          vendor/swagger.yaml
+source_sha:      edc6c1e1e825895797e456be3264a27cd3b7903a
+source_sha256:   061b6b092458c906fbd7413abf79b07cbbe484b9c3de2142e5d8b134479b03b4
+overlay:         vendor/overlay.yaml
+overlay_sha256:  none
+operations:      26
+models:          50
+enums:           31
