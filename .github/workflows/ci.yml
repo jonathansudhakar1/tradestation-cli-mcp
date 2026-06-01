@@ -35,5 +35,5 @@ jobs:
       - name: Type check (mypy)
         run: mypy src/tradestation
 
-      - name: Smoke tests (pytest -m "not live")
-        run: pytest -m "not live" tests/unit/test_smoke.py -v
+      - name: Tests (pytest -m "not live")
+        run: pytest -m "not live"
