@@ -2,6 +2,8 @@ upstream:        https://github.com/tradestation/api-docs
 file:            spec/swagger.yaml
 branch:          master
 commit_sha:      edc6c1e1e825895797e456be3264a27cd3b7903a
+upstream_date:   2024-05-30  (this file has been static for ~2 years —
+                 we treat it as a vendored fossil, not a moving target)
 fetched_at:      2026-06-01T08:00:23Z
 fetched_size:    183438 bytes
 sha256:          061b6b092458c906fbd7413abf79b07cbbe484b9c3de2142e5d8b134479b03b4

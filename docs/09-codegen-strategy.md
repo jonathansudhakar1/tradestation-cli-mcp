@@ -25,16 +25,16 @@ There are **two** TradeStation specs in the wild and neither is a perfect fit:
 
 | Source | Version | Public? | Status |
 |---|---|---|---|
-| [`github.com/tradestation/api-docs/spec/swagger.yaml`](https://github.com/tradestation/api-docs/blob/master/spec/swagger.yaml) | **v2** (Swagger 2.0, `https://api.tradestation.com/v2`) | ✓ public | Vendored at `vendor/swagger.yaml` (commit `edc6c1e1`). |
-| `https://api.tradestation.com/v3/swagger.json` | **v3** (OpenAPI 3.x, presumably) | ✗ requires Bearer token (401 unauth) | Fetchable at codegen time once credentials are wired. |
+| [`github.com/tradestation/api-docs/spec/swagger.yaml`](https://github.com/tradestation/api-docs/blob/master/spec/swagger.yaml) | **v2** (Swagger 2.0, `https://api.tradestation.com/v2`) | ✓ public | Vendored at `vendor/swagger.yaml` (commit `edc6c1e1`, last touched **2024-05-30** — effectively frozen). |
+| `https://api.tradestation.com/v3/swagger.json` | **v3** (OpenAPI 3.x, presumably) | ✗ requires Bearer token (401 unauth) | Fetched on-demand once credentials are wired. |
 
-TradeStation marks **v3 as recommended**, so v3 is what we wrap. But the public spec is v2 only. Our strategy handles both, with v3 as the target and v2 as the fallback baseline:
+TradeStation marks **v3 as recommended**, so v3 is what we wrap. But the public spec is v2 only — and **upstream has been static since May 2024**, so we treat it as a vendored fossil, not a moving target. The strategy:
 
 1. **Default codegen run:** uses `vendor/swagger.yaml` (v2). Produces a baseline model layer.
-2. **Authenticated codegen run:** if `TS_REFRESH_TOKEN` (or a saved `~/.tscli/credentials`) is present, fetches `https://api.tradestation.com/v3/swagger.json`, vendors it at `vendor/swagger.v3.json`, and regenerates. This is what we'll do in practice — the v3 spec becomes our source of truth as soon as the first developer has a refresh token.
+2. **One-shot authenticated fetch:** as soon as a developer has a working refresh token, `scripts/fetch_v3_spec.py` GETs `https://api.tradestation.com/v3/swagger.json` and writes `vendor/swagger.v3.json`. This is committed and from that point on becomes the primary source. Re-runs are manual (typically only when TradeStation announces a v3 change).
 3. **Overlay layer:** `vendor/overlay.yaml` adds v3 paths/fields that the v3 spec omits or describes loosely. Stripe and Twilio both do this. The generator merges overlay on top of the upstream spec.
 
-The pin file `vendor/swagger.commit.txt` records exactly which upstream commit we're vendoring + a sha256 of the file. CI compares both fields on every build; mismatch fails the build with a "re-vendor needed" message.
+The pin file `vendor/swagger.commit.txt` records exactly which upstream commit we're vendoring + a sha256 of the file. CI checks the sha256 on every PR (one-second sanity check, no cron); if a developer manually re-vendors, the pin file is updated in the same PR.
 
 ## What we generate vs hand-write
 
@@ -126,18 +126,12 @@ strict-nullable            = true
 ```
 .github/workflows/
 ├── ci.yml                  # standard test + lint
-├── verify-pin.yml          # runs scripts/verify_pin.py — fails if vendored
-│                           # file's sha256 doesn't match pin file
-└── update-spec.yml         # weekly cron:
-                            #   1. download upstream raw swagger.yaml
-                            #   2. if hash differs from vendored:
-                            #        - re-vendor + update pin file
-                            #        - run scripts/codegen.py
-                            #        - open PR titled "spec: update to {sha}"
-                            #   3. human reviews the model diff before merge
+└── verify-pin.yml          # runs scripts/verify_pin.py — fails if vendored
+                            # file's sha256 doesn't match pin file
+                            # (one-second sanity check; runs on every PR)
 ```
 
-When auth is available (e.g. via GH Actions secrets `TS_CLIENT_ID`/`TS_CLIENT_SECRET`/`TS_REFRESH_TOKEN`), `update-spec.yml` *also* fetches `/v3/swagger.json` and regenerates against that. v3 becomes primary; v2 remains as fallback.
+No cron-based auto-update workflow. The upstream public spec hasn't moved since May 2024, so polling weekly would be busywork and bot-noise in the repo. If TradeStation ever resumes publishing changes, we re-vendor manually (one `make vendor` invocation) and commit. The v3 spec — the only thing we expect to actually move — is fetched on-demand by `scripts/fetch_v3_spec.py` and committed in the PR that consumes it; it does not need a workflow.
 
 ## Coverage guarantee test
 
@@ -183,7 +177,7 @@ CI's `verify-pin.yml` confirms `_generated/MANIFEST.txt` matches what would be r
 
 ## Risks & mitigations
 
-- **v3 spec never gets published.** Mitigation: build manual v3 overlay against v2 baseline; service methods are hand-written anyway, so this is incremental work, not blocking. The auth-gated `/v3/swagger.json` is plan B; the manual overlay is plan C.
+- **v3 spec never gets published openly.** Mitigation: build manual v3 overlay against v2 baseline; service methods are hand-written anyway, so this is incremental work, not blocking. The auth-gated `/v3/swagger.json` is plan B; the manual overlay is plan C.
 - **Generator pins.** `datamodel-code-generator` updates can shift output formatting. Pin the version in `[dev]` extras and the CI Docker image.
-- **Big PR diffs on spec bumps.** Reviewer hostility; mitigate with the `update-spec.yml` workflow that opens a PR *summary-first* (model count delta, breaking changes) and links the generated file diff at the bottom.
 - **Hand-written overrides drift from generated.** Mitigated by the coverage test — any unreferenced operationId fails CI.
+- **Upstream resumes publishing.** Low-probability (no commits since 2024-05-30) but possible. The manual `make vendor` path stays available; we'd notice via TradeStation's developer-portal announcements before we'd notice via any cron.
