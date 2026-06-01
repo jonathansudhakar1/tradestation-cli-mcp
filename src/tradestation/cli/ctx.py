@@ -176,14 +176,17 @@ class CLIContext:
     def client(self) -> TradeStationClient:
         """Return the lazily-constructed :class:`~tradestation.client.TradeStationClient`.
 
-        On first access, loads credentials from disk (or profile) and creates
-        the client.  Subsequent accesses return the cached instance.
+        On first access, loads credentials from disk (or profile), falling back
+        to environment variables when no credentials file exists.  Subsequent
+        accesses return the cached instance.
 
         Raises:
-            tradestation.errors.NoCredentialsError: If no credentials are found.
+            tradestation.errors.NoCredentialsError: If no credentials are found
+                anywhere (file or env vars).
         """
         if self._client is None:
             from tradestation.client import TradeStationClient
+            from tradestation.errors import NoCredentialsError
 
             if self.profile:
                 self._client = TradeStationClient.from_profile(
@@ -192,11 +195,18 @@ class CLIContext:
                     retries=self.retries,
                 )
             else:
-                self._client = TradeStationClient.from_default_credentials(
-                    timeout=self.timeout,
-                    retries=self.retries,
-                    environment=self.environment,
-                )
+                try:
+                    self._client = TradeStationClient.from_default_credentials(
+                        timeout=self.timeout,
+                        retries=self.retries,
+                        environment=self.environment,
+                    )
+                except NoCredentialsError:
+                    # Fall back to environment variables (CI / .env workflows)
+                    self._client = TradeStationClient.from_env(
+                        timeout=self.timeout,
+                        retries=self.retries,
+                    )
         return self._client
 
     # ------------------------------------------------------------------

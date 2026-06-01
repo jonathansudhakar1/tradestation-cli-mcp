@@ -1,17 +1,16 @@
 """AsyncTradeStationClient — native async client.
 
 See docs/05-python-library.md §"Construction" and §"Design principles".
-
-Implementation: Phase 2.  All methods raise ``NotImplementedError``.
 """
 
 from __future__ import annotations
 
-from tradestation.credentials import Credentials
+from tradestation.credentials import Credentials, from_env, load
 from tradestation.enums import Environment
 from tradestation.services.brokerage import BrokerageService
 from tradestation.services.market_data import MarketDataService
 from tradestation.services.order_execution import OrderExecutionService
+from tradestation.transport import Transport
 
 
 class AsyncTradeStationClient:
@@ -47,6 +46,15 @@ class AsyncTradeStationClient:
         self._timeout = timeout
         self._retries = retries
         self._user_agent = user_agent
+        self._transport = Transport(
+            credentials,
+            timeout=timeout,
+            retries=retries,
+            user_agent=user_agent,
+        )
+        self._market_data: MarketDataService | None = None
+        self._brokerage: BrokerageService | None = None
+        self._order_execution: OrderExecutionService | None = None
 
     # ------------------------------------------------------------------
     # Class-method constructors
@@ -72,9 +80,11 @@ class AsyncTradeStationClient:
         Raises:
             tradestation.errors.NoCredentialsError: If the credentials file
                 does not exist.
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Construction'")
+        creds = load()
+        if environment is not None:
+            creds = creds.replace(environment=environment)
+        return cls(creds, timeout=timeout, retries=retries, user_agent=user_agent)
 
     @classmethod
     def from_env(
@@ -94,9 +104,9 @@ class AsyncTradeStationClient:
         Raises:
             tradestation.errors.NoCredentialsError: If any required variable
                 is missing.
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Construction'")
+        creds = from_env()
+        return cls(creds, timeout=timeout, retries=retries, user_agent=user_agent)
 
     @classmethod
     def from_profile(
@@ -118,9 +128,9 @@ class AsyncTradeStationClient:
         Raises:
             tradestation.errors.NoCredentialsError: If the profile does not
                 exist.
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Construction'")
+        creds = load(profile=profile)
+        return cls(creds, timeout=timeout, retries=retries, user_agent=user_agent)
 
     # ------------------------------------------------------------------
     # Service properties
@@ -128,30 +138,24 @@ class AsyncTradeStationClient:
 
     @property
     def market_data(self) -> MarketDataService:
-        """The MarketData service (B-series endpoints).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
-        """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface'")
+        """The MarketData service (B-series endpoints)."""
+        if self._market_data is None:
+            self._market_data = MarketDataService(self._transport)
+        return self._market_data
 
     @property
     def brokerage(self) -> BrokerageService:
-        """The Brokerage service (C-series endpoints).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
-        """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface'")
+        """The Brokerage service (C-series endpoints)."""
+        if self._brokerage is None:
+            self._brokerage = BrokerageService(self._transport)
+        return self._brokerage
 
     @property
     def order_execution(self) -> OrderExecutionService:
-        """The OrderExecution service (D-series endpoints).
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
-        """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface'")
+        """The OrderExecution service (D-series endpoints)."""
+        if self._order_execution is None:
+            self._order_execution = OrderExecutionService(self._transport)
+        return self._order_execution
 
     # ------------------------------------------------------------------
     # Async context manager support
@@ -165,4 +169,4 @@ class AsyncTradeStationClient:
 
     async def aclose(self) -> None:
         """Close the underlying HTTP transport and release resources."""
-        raise NotImplementedError("see docs/05-python-library.md §'Concurrency'")
+        await self._transport.close()

@@ -2,17 +2,18 @@
 
 See docs/05-python-library.md §"Construction" for factory method signatures
 and §"Design principles" for the sync-over-async rationale.
-
-Implementation: Phase 2.  All methods raise ``NotImplementedError``.
 """
 
 from __future__ import annotations
 
-from tradestation.credentials import Credentials
+import anyio
+
+from tradestation.credentials import Credentials, from_env, load
 from tradestation.enums import Environment
 from tradestation.services.brokerage import BrokerageService
 from tradestation.services.market_data import MarketDataService
 from tradestation.services.order_execution import OrderExecutionService
+from tradestation.transport import Transport
 
 
 class TradeStationClient:
@@ -66,6 +67,15 @@ class TradeStationClient:
         self._timeout = timeout
         self._retries = retries
         self._user_agent = user_agent
+        self._transport = Transport(
+            credentials,
+            timeout=timeout,
+            retries=retries,
+            user_agent=user_agent,
+        )
+        self._market_data: MarketDataService | None = None
+        self._brokerage: BrokerageService | None = None
+        self._order_execution: OrderExecutionService | None = None
 
     # ------------------------------------------------------------------
     # Class-method constructors
@@ -92,9 +102,11 @@ class TradeStationClient:
         Raises:
             tradestation.errors.NoCredentialsError: If the credentials file
                 does not exist.
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Construction'")
+        creds = load()
+        if environment is not None:
+            creds = creds.replace(environment=environment)
+        return cls(creds, timeout=timeout, retries=retries, user_agent=user_agent)
 
     @classmethod
     def from_env(
@@ -106,8 +118,9 @@ class TradeStationClient:
     ) -> TradeStationClient:
         """Build a client from environment variables.
 
-        Reads ``TS_CLIENT_ID``, ``TS_CLIENT_SECRET``, ``TS_REFRESH_TOKEN``,
-        ``TS_SCOPE`` (optional), ``TS_ENV`` (optional; default: ``live``).
+        Reads ``TS_CLIENT_ID``, ``TS_CLIENT_SECRET`` (optional),
+        ``TS_REFRESH_TOKEN``, ``TS_SCOPE`` (optional),
+        ``TS_ENV`` (optional; default: ``sim``).
 
         Args:
             timeout: Default HTTP request timeout in seconds.
@@ -117,9 +130,9 @@ class TradeStationClient:
         Raises:
             tradestation.errors.NoCredentialsError: If any required variable
                 is missing.
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Construction'")
+        creds = from_env()
+        return cls(creds, timeout=timeout, retries=retries, user_agent=user_agent)
 
     @classmethod
     def from_profile(
@@ -141,9 +154,9 @@ class TradeStationClient:
         Raises:
             tradestation.errors.NoCredentialsError: If the profile does not
                 exist.
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Construction'")
+        creds = load(profile=profile)
+        return cls(creds, timeout=timeout, retries=retries, user_agent=user_agent)
 
     # ------------------------------------------------------------------
     # Service properties
@@ -155,11 +168,10 @@ class TradeStationClient:
 
         Returns:
             :class:`~tradestation.services.market_data.MarketDataService`
-
-        Raises:
-            NotImplementedError: Until Phase 2 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface'")
+        if self._market_data is None:
+            self._market_data = MarketDataService(self._transport)
+        return self._market_data
 
     @property
     def brokerage(self) -> BrokerageService:
@@ -169,9 +181,11 @@ class TradeStationClient:
             :class:`~tradestation.services.brokerage.BrokerageService`
 
         Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            NotImplementedError: Until Phase 4 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface'")
+        if self._brokerage is None:
+            self._brokerage = BrokerageService(self._transport)
+        return self._brokerage
 
     @property
     def order_execution(self) -> OrderExecutionService:
@@ -181,6 +195,23 @@ class TradeStationClient:
             :class:`~tradestation.services.order_execution.OrderExecutionService`
 
         Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            NotImplementedError: Until Phase 5 implementation.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface'")
+        if self._order_execution is None:
+            self._order_execution = OrderExecutionService(self._transport)
+        return self._order_execution
+
+    # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
+
+    def close(self) -> None:
+        """Close the underlying HTTP transport and release resources."""
+        anyio.run(self._transport.close)
+
+    def __enter__(self) -> TradeStationClient:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self.close()
