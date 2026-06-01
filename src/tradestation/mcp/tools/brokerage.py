@@ -13,6 +13,8 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from tradestation.mcp._collect import collect_stream
+
 # ---------------------------------------------------------------------------
 # C1 — GET /brokerage/accounts
 # ---------------------------------------------------------------------------
@@ -235,7 +237,9 @@ def register_brokerage_stream_orders(mcp: FastMCP, client: Any) -> None:
             account_ids: List of account IDs.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.brokerage.stream_orders(account_ids)
+        return await collect_stream(
+            client.brokerage.stream_orders(account_ids), max_events=max_events
+        )
 
     brokerage_stream_orders._ts_op_id = "C10"  # type: ignore[attr-defined]
 
@@ -261,7 +265,10 @@ def register_brokerage_stream_orders_by_id(mcp: FastMCP, client: Any) -> None:
             order_ids: List of order IDs.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.brokerage.stream_orders_by_id(account_ids, order_ids)
+        return await collect_stream(
+            client.brokerage.stream_orders_by_id(account_ids, order_ids),
+            max_events=max_events,
+        )
 
     brokerage_stream_orders_by_id._ts_op_id = "C11"  # type: ignore[attr-defined]
 
@@ -285,7 +292,9 @@ def register_brokerage_stream_positions(mcp: FastMCP, client: Any) -> None:
             account_ids: List of account IDs.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.brokerage.stream_positions(account_ids)
+        return await collect_stream(
+            client.brokerage.stream_positions(account_ids), max_events=max_events
+        )
 
     brokerage_stream_positions._ts_op_id = "C12"  # type: ignore[attr-defined]
 
@@ -309,7 +318,9 @@ def register_brokerage_stream_wallets(mcp: FastMCP, client: Any) -> None:
             account_ids: List of account IDs.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.brokerage.stream_wallets(account_ids)
+        return await collect_stream(
+            client.brokerage.stream_wallets(account_ids), max_events=max_events
+        )
 
     brokerage_stream_wallets._ts_op_id = "C13"  # type: ignore[attr-defined]
 

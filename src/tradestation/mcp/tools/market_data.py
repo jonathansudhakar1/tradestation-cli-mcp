@@ -14,6 +14,8 @@ from typing import Any
 
 from fastmcp import FastMCP
 
+from tradestation.mcp._collect import collect_stream
+
 # ---------------------------------------------------------------------------
 # B1 — GET /marketdata/barcharts/{symbol}
 # ---------------------------------------------------------------------------
@@ -298,11 +300,16 @@ def register_market_data_stream_bars(mcp: FastMCP, client: Any) -> None:
             session_template: Session template.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.market_data.stream_bars(
-            symbol,
-            interval=interval,
-            unit=unit,
-            session_template=session_template,
+        from tradestation.enums import BarUnit, MarketSession
+
+        return await collect_stream(
+            client.market_data.stream_bars(
+                symbol,
+                interval=interval,
+                unit=BarUnit(unit),
+                session_template=MarketSession(session_template),
+            ),
+            max_events=max_events,
         )
 
     market_data_stream_bars._ts_op_id = "B12"  # type: ignore[attr-defined]
@@ -329,7 +336,9 @@ def register_market_data_stream_quotes(mcp: FastMCP, client: Any) -> None:
             symbols: List of instrument symbols.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.market_data.stream_quotes(symbols)
+        return await collect_stream(
+            client.market_data.stream_quotes(symbols), max_events=max_events
+        )
 
     market_data_stream_quotes._ts_op_id = "B13"  # type: ignore[attr-defined]
 
@@ -353,7 +362,9 @@ def register_market_data_stream_depth_quotes(mcp: FastMCP, client: Any) -> None:
             symbol: Instrument symbol.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.market_data.stream_depth_quotes(symbol)
+        return await collect_stream(
+            client.market_data.stream_depth_quotes(symbol), max_events=max_events
+        )
 
     market_data_stream_depth_quotes._ts_op_id = "B14"  # type: ignore[attr-defined]
 
@@ -377,7 +388,9 @@ def register_market_data_stream_depth_aggregates(mcp: FastMCP, client: Any) -> N
             symbol: Instrument symbol.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.market_data.stream_depth_aggregates(symbol)
+        return await collect_stream(
+            client.market_data.stream_depth_aggregates(symbol), max_events=max_events
+        )
 
     market_data_stream_depth_aggregates._ts_op_id = "B15"  # type: ignore[attr-defined]
 
@@ -403,7 +416,10 @@ def register_market_data_stream_option_chain(mcp: FastMCP, client: Any) -> None:
             expiration: Expiration date (ISO-8601).
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.market_data.stream_option_chain(underlying, expiration)
+        return await collect_stream(
+            client.market_data.stream_option_chain(underlying, expiration),
+            max_events=max_events,
+        )
 
     market_data_stream_option_chain._ts_op_id = "B16"  # type: ignore[attr-defined]
 
@@ -427,7 +443,9 @@ def register_market_data_stream_option_quotes(mcp: FastMCP, client: Any) -> None
             legs: List of option legs identifying strikes/expirations.
             max_events: Maximum number of events to collect before returning.
         """
-        return await client.market_data.stream_option_quotes(legs)
+        return await collect_stream(
+            client.market_data.stream_option_quotes(legs), max_events=max_events
+        )
 
     market_data_stream_option_quotes._ts_op_id = "B17"  # type: ignore[attr-defined]
 

@@ -12,6 +12,8 @@ import pytest
 import pytest_asyncio
 from fastmcp import Client, FastMCP
 
+from tradestation.streaming import StreamEvent
+
 # ---------------------------------------------------------------------------
 # Fake service stubs
 # ---------------------------------------------------------------------------
@@ -175,23 +177,25 @@ class FakeMarketDataService:
     async def option_risk_reward(self, legs: list[dict], *, entry: float) -> dict:
         return CANNED_RISK_REWARD
 
-    async def stream_bars(self, symbol: str, **kwargs: object) -> list[dict]:
-        return CANNED_BARS
+    async def stream_bars(self, symbol: str, **kwargs: object):
+        for item in CANNED_BARS:
+            yield StreamEvent(raw=item)
 
-    async def stream_quotes(self, symbols: list[str]) -> list[dict]:
-        return CANNED_QUOTES[:2]
+    async def stream_quotes(self, symbols: list[str]):
+        for item in CANNED_QUOTES[:2]:
+            yield StreamEvent(raw=item)
 
-    async def stream_depth_quotes(self, symbol: str) -> list[dict]:
-        return [{"Symbol": symbol, "Bid": 178.48, "Ask": 178.52}]
+    async def stream_depth_quotes(self, symbol: str):
+        yield StreamEvent(raw={"Symbol": symbol, "Bid": 178.48, "Ask": 178.52})
 
-    async def stream_depth_aggregates(self, symbol: str) -> list[dict]:
-        return [{"Symbol": symbol, "Bids": [], "Asks": []}]
+    async def stream_depth_aggregates(self, symbol: str):
+        yield StreamEvent(raw={"Symbol": symbol, "Bids": [], "Asks": []})
 
-    async def stream_option_chain(self, underlying: str, expiration: str) -> list[dict]:
-        return [{"Underlying": underlying, "Expiration": expiration}]
+    async def stream_option_chain(self, underlying: str, expiration: str):
+        yield StreamEvent(raw={"Underlying": underlying, "Expiration": expiration})
 
-    async def stream_option_quotes(self, legs: list[dict]) -> list[dict]:
-        return [{"Leg": legs[0] if legs else {}}]
+    async def stream_option_quotes(self, legs: list[dict]):
+        yield StreamEvent(raw={"Leg": legs[0] if legs else {}})
 
 
 class FakeBrokerageService:
@@ -226,17 +230,21 @@ class FakeBrokerageService:
     async def get_wallets(self, account_ids: list[str]) -> list[dict]:
         return CANNED_WALLETS
 
-    async def stream_orders(self, account_ids: list[str]) -> list[dict]:
-        return CANNED_ORDERS[:1]
+    async def stream_orders(self, account_ids: list[str]):
+        for item in CANNED_ORDERS[:1]:
+            yield StreamEvent(raw=item)
 
-    async def stream_orders_by_id(self, account_ids: list[str], order_ids: list[str]) -> list[dict]:
-        return CANNED_ORDERS[:1]
+    async def stream_orders_by_id(self, account_ids: list[str], order_ids: list[str]):
+        for item in CANNED_ORDERS[:1]:
+            yield StreamEvent(raw=item)
 
-    async def stream_positions(self, account_ids: list[str]) -> list[dict]:
-        return CANNED_POSITIONS[:1]
+    async def stream_positions(self, account_ids: list[str]):
+        for item in CANNED_POSITIONS[:1]:
+            yield StreamEvent(raw=item)
 
-    async def stream_wallets(self, account_ids: list[str]) -> list[dict]:
-        return CANNED_WALLETS
+    async def stream_wallets(self, account_ids: list[str]):
+        for item in CANNED_WALLETS:
+            yield StreamEvent(raw=item)
 
 
 class FakeOrderExecutionService:
