@@ -115,9 +115,7 @@ class TestTableQuotes:
 
 
 class TestTablePositions:
-    def test_renders_expected_columns(
-        self, sample_positions: list[dict[str, Any]]
-    ) -> None:
+    def test_renders_expected_columns(self, sample_positions: list[dict[str, Any]]) -> None:
         """positions table must have Symbol, Asset, Qty, AvgEntry, Last, MV, UPnL columns."""
         tbl = table_positions(sample_positions)
         column_headers = [str(col.header) for col in tbl.columns]

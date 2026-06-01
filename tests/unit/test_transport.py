@@ -238,7 +238,9 @@ class TestAuthHeaderInjection:
             return_value=httpx.Response(200, json={})
         )
         auth_mgr = _make_auth_manager()
-        transport = Transport(_make_creds(), auth_manager=auth_mgr, user_agent="mybot/1.0", retries=0)
+        transport = Transport(
+            _make_creds(), auth_manager=auth_mgr, user_agent="mybot/1.0", retries=0
+        )
         try:
             await transport.request("GET", "/marketdata/quotes/X")
         finally:
@@ -577,9 +579,7 @@ class TestStreaming:
             http_client=mock_client,
         )
         with pytest.raises(StreamError) as exc_info:
-            stream_iter = await transport.request_stream(
-                "/marketdata/stream/quotes/AAPL"
-            )
+            stream_iter = await transport.request_stream("/marketdata/stream/quotes/AAPL")
             async for _ in stream_iter:
                 pass
 

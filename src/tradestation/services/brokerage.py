@@ -79,9 +79,7 @@ class BrokerageService(BaseService):
         raw = await self._transport.request("GET", path)
         return parse_balances_response(raw)
 
-    async def get_bod_balances(
-        self, account_ids: list[str] | str
-    ) -> list[BeginningOfDayBalances]:
+    async def get_bod_balances(self, account_ids: list[str] | str) -> list[BeginningOfDayBalances]:
         """Fetch beginning-of-day balances for one or more accounts.
 
         Maps to: C3 GET /brokerage/accounts/{accountIDs}/balances/bod
@@ -163,9 +161,7 @@ class BrokerageService(BaseService):
             A list of historical order models.
         """
         path = f"/brokerage/accounts/{_join(account_ids)}/historicalorders"
-        raw = await self._transport.request(
-            "GET", path, params={"since": since.isoformat()}
-        )
+        raw = await self._transport.request("GET", path, params={"since": since.isoformat()})
         return parse_historical_orders_response(raw)
 
     async def get_historical_orders_by_id(
@@ -187,10 +183,7 @@ class BrokerageService(BaseService):
         Returns:
             A list of historical order models.
         """
-        path = (
-            f"/brokerage/accounts/{_join(account_ids)}"
-            f"/historicalorders/{_join(order_ids)}"
-        )
+        path = f"/brokerage/accounts/{_join(account_ids)}/historicalorders/{_join(order_ids)}"
         params = {"since": since.isoformat()} if since is not None else None
         raw = await self._transport.request("GET", path, params=params)
         return parse_historical_orders_response(raw)

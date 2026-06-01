@@ -272,7 +272,11 @@ class Transport:
                 )
             except httpx.TimeoutException as exc:
                 last_exc = TimeoutError(f"Request timed out: {method_upper} {path}", status=None)
-                if never_retry or method_upper not in _IDEMPOTENT_METHODS or attempt >= self._retries:
+                if (
+                    never_retry
+                    or method_upper not in _IDEMPOTENT_METHODS
+                    or attempt >= self._retries
+                ):
                     raise last_exc from exc
                 await self._backoff(attempt)
                 continue
@@ -280,15 +284,21 @@ class Transport:
                 last_exc = NetworkError(
                     f"Connection error: {method_upper} {path}: {exc}", status=None
                 )
-                if never_retry or method_upper not in _IDEMPOTENT_METHODS or attempt >= self._retries:
+                if (
+                    never_retry
+                    or method_upper not in _IDEMPOTENT_METHODS
+                    or attempt >= self._retries
+                ):
                     raise last_exc from exc
                 await self._backoff(attempt)
                 continue
             except httpx.RequestError as exc:
-                last_exc = NetworkError(
-                    f"Request error: {method_upper} {path}: {exc}", status=None
-                )
-                if never_retry or method_upper not in _IDEMPOTENT_METHODS or attempt >= self._retries:
+                last_exc = NetworkError(f"Request error: {method_upper} {path}: {exc}", status=None)
+                if (
+                    never_retry
+                    or method_upper not in _IDEMPOTENT_METHODS
+                    or attempt >= self._retries
+                ):
                     raise last_exc from exc
                 await self._backoff(attempt)
                 continue
@@ -306,7 +316,11 @@ class Transport:
                     retry_after=retry_after,
                     request_id=request_id,
                 )
-                if never_retry or method_upper not in _IDEMPOTENT_METHODS or attempt >= self._retries:
+                if (
+                    never_retry
+                    or method_upper not in _IDEMPOTENT_METHODS
+                    or attempt >= self._retries
+                ):
                     raise rate_err
                 wait = retry_after if retry_after is not None else self._backoff_seconds(attempt)
                 _logger.debug("Rate limited; waiting %.1fs before retry", wait)
@@ -326,7 +340,11 @@ class Transport:
                     request_id=request_id,
                     payload=payload,
                 )
-                if never_retry or method_upper not in _IDEMPOTENT_METHODS or attempt >= self._retries:
+                if (
+                    never_retry
+                    or method_upper not in _IDEMPOTENT_METHODS
+                    or attempt >= self._retries
+                ):
                     raise srv_err
                 await self._backoff(attempt)
                 last_exc = srv_err

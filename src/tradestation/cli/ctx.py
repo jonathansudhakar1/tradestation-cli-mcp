@@ -12,6 +12,7 @@ Usage in a command::
     import typer
     from tradestation.cli.ctx import CLIContext, pass_cli_ctx
 
+
     @app.command()
     def my_cmd(ctx: typer.Context) -> None:
         cli = CLIContext.from_typer(ctx)

@@ -76,10 +76,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--allow-remote",
         action="store_true",
         default=False,
-        help=(
-            "Allow non-loopback HTTP connections. "
-            "Requires --http-token for security."
-        ),
+        help=("Allow non-loopback HTTP connections. Requires --http-token for security."),
     )
     parser.add_argument(
         "--http-token",
@@ -112,29 +109,20 @@ def _build_parser() -> argparse.ArgumentParser:
         choices=["off", "require", "review"],
         default="require",
         metavar="MODE",
-        help=(
-            "Safety mode for destructive trading tools. "
-            "off | require (default) | review."
-        ),
+        help=("Safety mode for destructive trading tools. off | require (default) | review."),
     )
     parser.add_argument(
         "--max-order-notional",
         type=float,
         default=None,
         metavar="USD",
-        help=(
-            "Reject orders whose preview estimate exceeds this USD cap. "
-            "Default: no cap."
-        ),
+        help=("Reject orders whose preview estimate exceeds this USD cap. Default: no cap."),
     )
     parser.add_argument(
         "--allowed-symbols",
         default=None,
         metavar="SYMBOLS",
-        help=(
-            "Comma-separated symbol allowlist for trading tools. "
-            "Default: all symbols allowed."
-        ),
+        help=("Comma-separated symbol allowlist for trading tools. Default: all symbols allowed."),
     )
 
     # --- credentials ---

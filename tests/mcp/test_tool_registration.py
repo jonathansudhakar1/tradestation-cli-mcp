@@ -94,9 +94,8 @@ class TestToolCount:
             if tool_name not in registered:
                 missing.append(f"{op_id} → {tool_name}")
 
-        assert not missing, (
-            f"{len(missing)} tool(s) missing from MCP server:\n"
-            + "\n".join(f"  {m}" for m in missing)
+        assert not missing, f"{len(missing)} tool(s) missing from MCP server:\n" + "\n".join(
+            f"  {m}" for m in missing
         )
 
     def test_registered_count_is_at_least_38(self, mcp_server: Any) -> None:
@@ -116,9 +115,7 @@ class TestIndividualTools:
     """Parametrized test: each inventory ID has its tool registered."""
 
     @pytest.mark.parametrize("op_id,tool_name", EXPECTED_TOOL_NAMES)
-    def test_tool_registered(
-        self, op_id: str, tool_name: str, mcp_server: Any
-    ) -> None:
+    def test_tool_registered(self, op_id: str, tool_name: str, mcp_server: Any) -> None:
         """Tool {tool_name} (inventory {op_id}) is registered."""
         registered = _get_registered_tool_names(mcp_server)
         assert tool_name in registered, (

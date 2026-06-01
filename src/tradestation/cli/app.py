@@ -210,8 +210,7 @@ def _global_options(
             from rich.console import Console
 
             Console().print(
-                f"[bold red]Error:[/bold red] Unknown environment {env!r}. "
-                "Use 'live' or 'sim'."
+                f"[bold red]Error:[/bold red] Unknown environment {env!r}. Use 'live' or 'sim'."
             )
             raise typer.Exit(code=2) from None
     else:

@@ -128,9 +128,7 @@ class TestRefreshExchange:
         self,
         refresh_response: dict[str, object],
     ) -> None:
-        respx.post(_TOKEN_URL).mock(
-            return_value=httpx.Response(200, json=refresh_response)
-        )
+        respx.post(_TOKEN_URL).mock(return_value=httpx.Response(200, json=refresh_response))
         creds = _make_creds()
         mgr = AuthManager(creds)
 
@@ -142,9 +140,7 @@ class TestRefreshExchange:
         self,
         refresh_response: dict[str, object],
     ) -> None:
-        respx.post(_TOKEN_URL).mock(
-            return_value=httpx.Response(200, json=refresh_response)
-        )
+        respx.post(_TOKEN_URL).mock(return_value=httpx.Response(200, json=refresh_response))
         creds = _make_creds()
         mgr = AuthManager(creds)
 
@@ -172,9 +168,7 @@ class TestRefreshExchange:
         self,
         refresh_response: dict[str, object],
     ) -> None:
-        respx.post(_TOKEN_URL).mock(
-            return_value=httpx.Response(200, json=refresh_response)
-        )
+        respx.post(_TOKEN_URL).mock(return_value=httpx.Response(200, json=refresh_response))
         creds = _make_creds(
             access_token="already-valid",
             access_token_expires_at="2099-12-31T23:59:59Z",
@@ -191,9 +185,7 @@ class TestRefreshExchange:
         self,
         refresh_response: dict[str, object],
     ) -> None:
-        respx.post(_TOKEN_URL).mock(
-            return_value=httpx.Response(200, json=refresh_response)
-        )
+        respx.post(_TOKEN_URL).mock(return_value=httpx.Response(200, json=refresh_response))
         creds = _make_creds()  # no token
         mgr = AuthManager(creds)
 
@@ -247,9 +239,7 @@ class TestErrorMapping:
 
     @respx.mock
     async def test_connect_error_raises_network_error(self) -> None:
-        respx.post(_TOKEN_URL).mock(
-            side_effect=httpx.ConnectError("connection refused")
-        )
+        respx.post(_TOKEN_URL).mock(side_effect=httpx.ConnectError("connection refused"))
         creds = _make_creds()
         mgr = AuthManager(creds)
 
@@ -335,9 +325,7 @@ class TestRefreshNow:
         self,
         refresh_response: dict[str, object],
     ) -> None:
-        respx.post(_TOKEN_URL).mock(
-            return_value=httpx.Response(200, json=refresh_response)
-        )
+        respx.post(_TOKEN_URL).mock(return_value=httpx.Response(200, json=refresh_response))
         creds = _make_creds()
         mgr = AuthManager(creds)
         updated = await mgr.refresh_now()
@@ -399,6 +387,7 @@ class TestRotationSave:
 
         # Save initial creds
         from tradestation.credentials import save as creds_save
+
         creds_save(creds, creds_path)
 
         mgr = AuthManager(creds, creds_path=creds_path)
@@ -406,6 +395,7 @@ class TestRotationSave:
 
         # Load and check rotation was saved
         from tradestation.credentials import load as creds_load
+
         updated = creds_load(creds_path)
         assert updated.refresh_token == "rotated-refresh-token-99999"
 
@@ -473,9 +463,7 @@ class TestEmptyAccessToken:
 class TestRequestError:
     @respx.mock
     async def test_request_error_raises_network_error(self) -> None:
-        respx.post(_TOKEN_URL).mock(
-            side_effect=httpx.RequestError("generic request error")
-        )
+        respx.post(_TOKEN_URL).mock(side_effect=httpx.RequestError("generic request error"))
         creds = _make_creds()
         mgr = AuthManager(creds)
 
@@ -496,9 +484,7 @@ class TestInjectedHttpClient:
         refresh_response: dict[str, object],
     ) -> None:
         """Injected http_client should NOT be closed after the request."""
-        respx.post(_TOKEN_URL).mock(
-            return_value=httpx.Response(200, json=refresh_response)
-        )
+        respx.post(_TOKEN_URL).mock(return_value=httpx.Response(200, json=refresh_response))
         # Use a real httpx client but wrap it
         import httpx as _httpx
 
@@ -526,9 +512,7 @@ class TestSaveFailureDuringRotation:
         tmp_credentials_dir: pathlib.Path,
     ) -> None:
         """A failure to save credentials during rotation should log a warning, not raise."""
-        respx.post(_TOKEN_URL).mock(
-            return_value=httpx.Response(200, json=refresh_response)
-        )
+        respx.post(_TOKEN_URL).mock(return_value=httpx.Response(200, json=refresh_response))
         import os
 
         creds = _make_creds()

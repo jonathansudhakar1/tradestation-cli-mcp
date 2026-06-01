@@ -59,6 +59,7 @@ class TestAskConfirm:
 
     def test_eof_returns_false(self, monkeypatch) -> None:  # type: ignore[no-untyped-def]
         """EOFError (piped stdin exhausted) should return False."""
+
         def raise_eof() -> str:
             raise EOFError()
 
@@ -98,6 +99,7 @@ class TestAskTypedToken:
 
     def test_eof_returns_false(self, monkeypatch) -> None:  # type: ignore[no-untyped-def]
         """EOFError returns False."""
+
         def raise_eof() -> str:
             raise EOFError()
 

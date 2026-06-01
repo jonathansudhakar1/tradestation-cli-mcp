@@ -20,6 +20,7 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _get_models() -> Any:
     """Import the generated models module, forcing a fresh load."""
     mod_name = "tradestation._generated.models"
@@ -66,8 +67,7 @@ def test_models_has_enums() -> None:
     found = [
         name
         for name in dir(models)
-        if isinstance(getattr(models, name, None), type)
-        and issubclass(getattr(models, name), Enum)
+        if isinstance(getattr(models, name, None), type) and issubclass(getattr(models, name), Enum)
     ]
     assert len(found) >= 3, f"Expected >= 3 Enum subclasses, found {len(found)}: {found}"
 

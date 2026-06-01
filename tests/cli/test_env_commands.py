@@ -44,7 +44,11 @@ class TestEnvShow:
         result = cli_runner.invoke(app, ["env", "show"])
         assert result.exit_code == 0
         # Should have some warning indicator
-        assert "⚠" in result.output or "warning" in result.output.lower() or "real money" in result.output.lower()
+        assert (
+            "⚠" in result.output
+            or "warning" in result.output.lower()
+            or "real money" in result.output.lower()
+        )
 
 
 class TestEnvSim:

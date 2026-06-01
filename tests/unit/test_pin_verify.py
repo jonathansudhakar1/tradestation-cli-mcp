@@ -100,12 +100,8 @@ print("OK: matches")
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 1, (
-        f"Expected exit 1 on sha mismatch, got {result.returncode}"
-    )
-    assert "ERROR" in result.stderr, (
-        f"Expected 'ERROR' in stderr, got: {result.stderr!r}"
-    )
+    assert result.returncode == 1, f"Expected exit 1 on sha mismatch, got {result.returncode}"
+    assert "ERROR" in result.stderr, f"Expected 'ERROR' in stderr, got: {result.stderr!r}"
 
 
 def test_verify_pin_missing_swagger(tmp_path: Path) -> None:

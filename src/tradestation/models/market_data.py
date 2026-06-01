@@ -143,11 +143,27 @@ class Quote(BaseModel):
 # ---------------------------------------------------------------------------
 
 _FLOAT_FIELDS = {
-    "Last", "Bid", "Ask", "Open", "High", "Low", "Close", "PreviousClose",
-    "NetChange", "NetChangePct", "High52Week", "Low52Week", "VWAP",
+    "Last",
+    "Bid",
+    "Ask",
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "PreviousClose",
+    "NetChange",
+    "NetChangePct",
+    "High52Week",
+    "Low52Week",
+    "VWAP",
 }
 _INT_FIELDS = {
-    "BidSize", "AskSize", "LastSize", "Volume", "PreviousVolume", "DailyOpenInterest",
+    "BidSize",
+    "AskSize",
+    "LastSize",
+    "Volume",
+    "PreviousVolume",
+    "DailyOpenInterest",
 }
 
 
@@ -259,11 +275,32 @@ def parse_quotes_response(raw: dict[str, Any]) -> list[Quote]:
             continue
         # Collect any top-level fields we didn't expect (for diagnostics)
         known = {
-            "Symbol", "Last", "Bid", "Ask", "Open", "High", "Low", "Close",
-            "PreviousClose", "BidSize", "AskSize", "LastSize", "NetChange",
-            "NetChangePct", "Volume", "PreviousVolume", "DailyOpenInterest",
-            "High52Week", "Low52Week", "High52WeekTimestamp", "Low52WeekTimestamp",
-            "TradeTime", "LastVenue", "VWAP", "TickSizeTier", "MarketFlags",
+            "Symbol",
+            "Last",
+            "Bid",
+            "Ask",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "PreviousClose",
+            "BidSize",
+            "AskSize",
+            "LastSize",
+            "NetChange",
+            "NetChangePct",
+            "Volume",
+            "PreviousVolume",
+            "DailyOpenInterest",
+            "High52Week",
+            "Low52Week",
+            "High52WeekTimestamp",
+            "Low52WeekTimestamp",
+            "TradeTime",
+            "LastVenue",
+            "VWAP",
+            "TickSizeTier",
+            "MarketFlags",
             "Restrictions",
         }
         for k in item:

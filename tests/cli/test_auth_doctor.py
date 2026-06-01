@@ -87,7 +87,11 @@ class TestAuthDoctor:
         """doctor without credentials should still run (exit 0) with diagnostic info."""
         result = cli_runner.invoke(app, ["auth", "doctor"])
         assert result.exit_code == 0
-        assert "Not found" in result.output or "No credentials" in result.output or "✖" in result.output
+        assert (
+            "Not found" in result.output
+            or "No credentials" in result.output
+            or "✖" in result.output
+        )
 
     def test_doctor_reports_token_exchange_success(
         self,

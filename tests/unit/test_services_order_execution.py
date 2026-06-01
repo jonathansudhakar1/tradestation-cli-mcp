@@ -45,9 +45,7 @@ def _svc(http: httpx.AsyncClient) -> OrderExecutionService:
 
 class TestRequestSerialisation:
     def test_market_order_body(self) -> None:
-        req = MarketOrderRequest(
-            account_id="11111111", symbol="AAPL", quantity=100, side=Side.BUY
-        )
+        req = MarketOrderRequest(account_id="11111111", symbol="AAPL", quantity=100, side=Side.BUY)
         body = req.to_api()
         assert body["AccountID"] == "11111111"
         assert body["Symbol"] == "AAPL"
@@ -59,8 +57,11 @@ class TestRequestSerialisation:
 
     def test_limit_order_body(self) -> None:
         req = LimitOrderRequest(
-            account_id="11111111", symbol="AAPL", quantity=100,
-            side=Side.SELL, limit_price=190.50,
+            account_id="11111111",
+            symbol="AAPL",
+            quantity=100,
+            side=Side.SELL,
+            limit_price=190.50,
         )
         body = req.to_api()
         assert body["OrderType"] == "Limit"
@@ -69,8 +70,12 @@ class TestRequestSerialisation:
 
     def test_stop_limit_body(self) -> None:
         req = StopLimitOrderRequest(
-            account_id="1", symbol="AAPL", quantity=10, side=Side.SELL_SHORT,
-            stop_price=170.0, limit_price=169.0,
+            account_id="1",
+            symbol="AAPL",
+            quantity=10,
+            side=Side.SELL_SHORT,
+            stop_price=170.0,
+            limit_price=169.0,
         )
         body = req.to_api()
         assert body["OrderType"] == "StopLimit"
@@ -88,17 +93,19 @@ class TestRequestSerialisation:
 
     def test_gtd_expiration(self) -> None:
         req = MarketOrderRequest(
-            account_id="1", symbol="AAPL", quantity=1, side=Side.BUY,
-            time_in_force=TimeInForce.GTD, gtd_expiration="2026-12-31",
+            account_id="1",
+            symbol="AAPL",
+            quantity=1,
+            side=Side.BUY,
+            time_in_force=TimeInForce.GTD,
+            gtd_expiration="2026-12-31",
         )
         body = req.to_api()
         assert body["TimeInForce"] == {"Duration": "GTD", "Expiration": "2026-12-31"}
 
     def test_frozen_order_type(self) -> None:
         # The discriminator is frozen — a market request stays Market.
-        req = MarketOrderRequest(
-            account_id="1", symbol="AAPL", quantity=1, side=Side.BUY
-        )
+        req = MarketOrderRequest(account_id="1", symbol="AAPL", quantity=1, side=Side.BUY)
         assert req.order_type is OrderType.MARKET
 
 
@@ -114,19 +121,28 @@ class TestConfirmOrder:
         route = respx.post(f"{_BASE}/orderexecution/orderconfirm").mock(
             return_value=httpx.Response(
                 200,
-                json={"Confirmations": [
-                    {"AccountID": "11111111", "Symbol": "AAPL", "Quantity": "100",
-                     "OrderType": "Market", "EstimatedCost": "16743.00",
-                     "EstimatedCommission": "0", "Route": "Intelligent",
-                     "SummaryMessage": "Buy 100 AAPL @ Market"},
-                ]},
+                json={
+                    "Confirmations": [
+                        {
+                            "AccountID": "11111111",
+                            "Symbol": "AAPL",
+                            "Quantity": "100",
+                            "OrderType": "Market",
+                            "EstimatedCost": "16743.00",
+                            "EstimatedCommission": "0",
+                            "Route": "Intelligent",
+                            "SummaryMessage": "Buy 100 AAPL @ Market",
+                        },
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:
             svc = _svc(http)
             confs = await svc.confirm_order(
-                MarketOrderRequest(account_id="11111111", symbol="AAPL",
-                                   quantity=100, side=Side.BUY)
+                MarketOrderRequest(
+                    account_id="11111111", symbol="AAPL", quantity=100, side=Side.BUY
+                )
             )
         assert route.called
         body = json.loads(route.calls.last.request.content)
@@ -153,8 +169,9 @@ class TestPlaceReplaceCancel:
         async with httpx.AsyncClient() as http:
             svc = _svc(http)
             resp = await svc.place_order(
-                LimitOrderRequest(account_id="1", symbol="AAPL", quantity=100,
-                                  side=Side.BUY, limit_price=178.0)
+                LimitOrderRequest(
+                    account_id="1", symbol="AAPL", quantity=100, side=Side.BUY, limit_price=178.0
+                )
             )
         assert resp.orders[0].order_id == "835711"
         assert resp.rejected is False
@@ -165,15 +182,21 @@ class TestPlaceReplaceCancel:
         respx.post(f"{_BASE}/orderexecution/orders").mock(
             return_value=httpx.Response(
                 200,
-                json={"Orders": [{"OrderID": "0", "Error": "InsufficientFunds",
-                                  "Message": "Not enough buying power"}]},
+                json={
+                    "Orders": [
+                        {
+                            "OrderID": "0",
+                            "Error": "InsufficientFunds",
+                            "Message": "Not enough buying power",
+                        }
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:
             svc = _svc(http)
             resp = await svc.place_order(
-                MarketOrderRequest(account_id="1", symbol="AAPL", quantity=1e9,
-                                   side=Side.BUY)
+                MarketOrderRequest(account_id="1", symbol="AAPL", quantity=1e9, side=Side.BUY)
             )
         assert resp.rejected is True
 
@@ -187,8 +210,9 @@ class TestPlaceReplaceCancel:
             svc = _svc(http)
             await svc.replace_order(
                 "835711",
-                LimitOrderRequest(account_id="1", symbol="AAPL", quantity=100,
-                                  side=Side.BUY, limit_price=179.0),
+                LimitOrderRequest(
+                    account_id="1", symbol="AAPL", quantity=100, side=Side.BUY, limit_price=179.0
+                ),
             )
         assert route.called
 
@@ -214,10 +238,12 @@ class TestOrderGroups:
         grp = OrderGroupRequest(
             group_type="OCO",
             orders=[
-                LimitOrderRequest(account_id="1", symbol="AAPL", quantity=100,
-                                  side=Side.SELL, limit_price=190.0),
-                StopOrderRequest(account_id="1", symbol="AAPL", quantity=100,
-                                 side=Side.SELL, stop_price=170.0),
+                LimitOrderRequest(
+                    account_id="1", symbol="AAPL", quantity=100, side=Side.SELL, limit_price=190.0
+                ),
+                StopOrderRequest(
+                    account_id="1", symbol="AAPL", quantity=100, side=Side.SELL, stop_price=170.0
+                ),
             ],
         )
         body = grp.to_api()
@@ -239,10 +265,20 @@ class TestOrderGroups:
             grp = OrderGroupRequest(
                 group_type="OCO",
                 orders=[
-                    LimitOrderRequest(account_id="1", symbol="AAPL", quantity=100,
-                                      side=Side.SELL, limit_price=190.0),
-                    StopOrderRequest(account_id="1", symbol="AAPL", quantity=100,
-                                     side=Side.SELL, stop_price=170.0),
+                    LimitOrderRequest(
+                        account_id="1",
+                        symbol="AAPL",
+                        quantity=100,
+                        side=Side.SELL,
+                        limit_price=190.0,
+                    ),
+                    StopOrderRequest(
+                        account_id="1",
+                        symbol="AAPL",
+                        quantity=100,
+                        side=Side.SELL,
+                        stop_price=170.0,
+                    ),
                 ],
             )
             confs = await svc.confirm_order_group(grp)
@@ -252,17 +288,14 @@ class TestOrderGroups:
     @respx.mock
     async def test_place_group(self) -> None:
         respx.post(f"{_BASE}/orderexecution/ordergroups").mock(
-            return_value=httpx.Response(
-                200, json={"Orders": [{"OrderID": "1"}, {"OrderID": "2"}]}
-            )
+            return_value=httpx.Response(200, json={"Orders": [{"OrderID": "1"}, {"OrderID": "2"}]})
         )
         async with httpx.AsyncClient() as http:
             svc = _svc(http)
             grp = OrderGroupRequest(
                 group_type="BRK",
                 orders=[
-                    MarketOrderRequest(account_id="1", symbol="AAPL", quantity=100,
-                                       side=Side.BUY),
+                    MarketOrderRequest(account_id="1", symbol="AAPL", quantity=100, side=Side.BUY),
                 ],
             )
             resp = await svc.place_order_group(grp)
@@ -281,10 +314,15 @@ class TestTriggersAndRoutes:
         respx.get(f"{_BASE}/orderexecution/activationtriggers").mock(
             return_value=httpx.Response(
                 200,
-                json={"ActivationTriggers": [
-                    {"Key": "STT", "Name": "SingleTradeTick",
-                     "Description": "Trigger on a single trade tick"},
-                ]},
+                json={
+                    "ActivationTriggers": [
+                        {
+                            "Key": "STT",
+                            "Name": "SingleTradeTick",
+                            "Description": "Trigger on a single trade tick",
+                        },
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:
@@ -298,10 +336,12 @@ class TestTriggersAndRoutes:
         respx.get(f"{_BASE}/orderexecution/routes").mock(
             return_value=httpx.Response(
                 200,
-                json={"Routes": [
-                    {"Id": "AUTO", "Name": "Intelligent", "AssetTypes": ["STOCK"]},
-                    {"Id": "ARCA", "Name": "ARCA", "AssetTypes": ["STOCK"]},
-                ]},
+                json={
+                    "Routes": [
+                        {"Id": "AUTO", "Name": "Intelligent", "AssetTypes": ["STOCK"]},
+                        {"Id": "ARCA", "Name": "ARCA", "AssetTypes": ["STOCK"]},
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:

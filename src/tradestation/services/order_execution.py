@@ -62,9 +62,7 @@ class OrderExecutionService(BaseService):
         Raises:
             tradestation.errors.ApiError: On 4xx / 5xx from the API.
         """
-        raw = await self._transport.request(
-            "POST", "/orderexecution/orders", json=request.to_api()
-        )
+        raw = await self._transport.request("POST", "/orderexecution/orders", json=request.to_api())
         return parse_order_response(raw)
 
     async def replace_order(self, order_id: str, request: OrderRequest) -> OrderResponse:
@@ -95,14 +93,10 @@ class OrderExecutionService(BaseService):
         Returns:
             The :class:`~tradestation.models.orders.OrderResponse`.
         """
-        raw = await self._transport.request(
-            "DELETE", f"/orderexecution/orders/{order_id}"
-        )
+        raw = await self._transport.request("DELETE", f"/orderexecution/orders/{order_id}")
         return parse_order_response(raw)
 
-    async def confirm_order_group(
-        self, request: OrderGroupRequest
-    ) -> list[OrderConfirmation]:
+    async def confirm_order_group(self, request: OrderGroupRequest) -> list[OrderConfirmation]:
         """Preview a grouped order (OCO / OSO / bracket) without submitting.
 
         Maps to: D5 POST /orderexecution/ordergroupconfirm

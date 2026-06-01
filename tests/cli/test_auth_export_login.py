@@ -27,9 +27,7 @@ class TestAuthExport:
         tmp_credentials_file: Path,
     ) -> None:
         """export with guard flag should print JSON payload to stdout."""
-        result = cli_runner.invoke(
-            app, ["auth", "export", "--yes-i-want-secrets-on-stdout"]
-        )
+        result = cli_runner.invoke(app, ["auth", "export", "--yes-i-want-secrets-on-stdout"])
         assert result.exit_code == 0, result.output
         # Output should be valid JSON containing credential fields
         output = result.output.strip()
@@ -43,9 +41,7 @@ class TestAuthExport:
         tmp_tscli_dir: Path,
     ) -> None:
         """export exits 3 when no credentials file exists."""
-        result = cli_runner.invoke(
-            app, ["auth", "export", "--yes-i-want-secrets-on-stdout"]
-        )
+        result = cli_runner.invoke(app, ["auth", "export", "--yes-i-want-secrets-on-stdout"])
         assert result.exit_code == 3
 
     def test_export_credential_values_present(
@@ -55,9 +51,7 @@ class TestAuthExport:
         fake_credentials: object,
     ) -> None:
         """Exported JSON must include the stored credential values."""
-        result = cli_runner.invoke(
-            app, ["auth", "export", "--yes-i-want-secrets-on-stdout"]
-        )
+        result = cli_runner.invoke(app, ["auth", "export", "--yes-i-want-secrets-on-stdout"])
         assert result.exit_code == 0
         data = json.loads(result.output.strip())
         # Values from FakeCredentials

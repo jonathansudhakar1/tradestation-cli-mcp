@@ -101,23 +101,36 @@ def _build_request(
         if limit_price is None:
             raise typer.BadParameter("--limit-price is required for a limit order")
         return LimitOrderRequest(
-            account_id=account, symbol=symbol, quantity=qty, side=side,
-            time_in_force=tif, limit_price=limit_price,
+            account_id=account,
+            symbol=symbol,
+            quantity=qty,
+            side=side,
+            time_in_force=tif,
+            limit_price=limit_price,
         )
     if order_type is OrderType.STOP_MARKET:
         if stop_price is None:
             raise typer.BadParameter("--stop-price is required for a stop order")
         return StopOrderRequest(
-            account_id=account, symbol=symbol, quantity=qty, side=side,
-            time_in_force=tif, stop_price=stop_price,
+            account_id=account,
+            symbol=symbol,
+            quantity=qty,
+            side=side,
+            time_in_force=tif,
+            stop_price=stop_price,
         )
     if stop_price is None or limit_price is None:
         raise typer.BadParameter(
             "--stop-price and --limit-price are required for a stop-limit order"
         )
     return StopLimitOrderRequest(
-        account_id=account, symbol=symbol, quantity=qty, side=side,
-        time_in_force=tif, stop_price=stop_price, limit_price=limit_price,
+        account_id=account,
+        symbol=symbol,
+        quantity=qty,
+        side=side,
+        time_in_force=tif,
+        stop_price=stop_price,
+        limit_price=limit_price,
     )
 
 
@@ -212,9 +225,7 @@ _TypeOpt = Annotated[
     typer.Option("--type", case_sensitive=False, help="market / limit / stop_market / stop_limit."),
 ]
 _QtyOpt = Annotated[float, typer.Option("--qty", "-q", help="Quantity (fractional OK for crypto).")]
-_TifOpt = Annotated[
-    TimeInForce, typer.Option("--tif", case_sensitive=False, help="Time in force.")
-]
+_TifOpt = Annotated[TimeInForce, typer.Option("--tif", case_sensitive=False, help="Time in force.")]
 _LimitOpt = Annotated[float | None, typer.Option("--limit-price", help="Limit price.")]
 _StopOpt = Annotated[float | None, typer.Option("--stop-price", help="Stop price.")]
 
@@ -242,8 +253,14 @@ def confirm_cmd(
     """
     cli = CLIContext.from_typer(ctx)
     req = _build_request(
-        account=account, symbol=symbol, side=side, order_type=order_type,
-        qty=qty, tif=tif, limit_price=limit_price, stop_price=stop_price,
+        account=account,
+        symbol=symbol,
+        side=side,
+        order_type=order_type,
+        qty=qty,
+        tif=tif,
+        limit_price=limit_price,
+        stop_price=stop_price,
     )
     confs = _run(cli, cli.client.order_execution.confirm_order(req))
     if not confs:
@@ -281,8 +298,14 @@ def place_cmd(
     """
     cli = CLIContext.from_typer(ctx)
     req = _build_request(
-        account=account, symbol=symbol, side=side, order_type=order_type,
-        qty=qty, tif=tif, limit_price=limit_price, stop_price=stop_price,
+        account=account,
+        symbol=symbol,
+        side=side,
+        order_type=order_type,
+        qty=qty,
+        tif=tif,
+        limit_price=limit_price,
+        stop_price=stop_price,
     )
     # Always preview first.
     confs = _run(cli, cli.client.order_execution.confirm_order(req))
@@ -358,8 +381,14 @@ def replace_cmd(
     """
     cli = CLIContext.from_typer(ctx)
     req = _build_request(
-        account=account, symbol=symbol, side=side, order_type=order_type,
-        qty=qty, tif=tif, limit_price=limit_price, stop_price=stop_price,
+        account=account,
+        symbol=symbol,
+        side=side,
+        order_type=order_type,
+        qty=qty,
+        tif=tif,
+        limit_price=limit_price,
+        stop_price=stop_price,
     )
     resp = _run(cli, cli.client.order_execution.replace_order(order_id, req))
     for o in resp.orders:

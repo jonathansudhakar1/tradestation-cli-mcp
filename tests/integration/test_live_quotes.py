@@ -66,9 +66,7 @@ async def test_live_get_quotes_sim() -> None:
             f"Quote for {q.symbol!r} has TradeTime={q.trade_time!r} "
             "which could not be parsed as a datetime"
         )
-        assert isinstance(q.last_utc, datetime), (
-            f"last_utc is not a datetime: {q.last_utc!r}"
-        )
+        assert isinstance(q.last_utc, datetime), f"last_utc is not a datetime: {q.last_utc!r}"
 
         # Market flags present
         assert q.market_flags is not None, f"No MarketFlags for {q.symbol!r}"

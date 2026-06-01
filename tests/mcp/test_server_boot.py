@@ -122,8 +122,11 @@ def test_load_client_no_credentials_exits_3() -> None:
     import sys
 
     result = subprocess.run(
-        [sys.executable, "-c",
-         "from tradestation.mcp.server import _load_client; _load_client('default', 'sim', False)"],
+        [
+            sys.executable,
+            "-c",
+            "from tradestation.mcp.server import _load_client; _load_client('default', 'sim', False)",
+        ],
         capture_output=True,
         text=True,
         env={**__import__("os").environ, "TS_CREDENTIALS": "/tmp/nonexistent-creds-xyz"},
@@ -139,16 +142,25 @@ def test_build_parser_all_flags() -> None:
     parser = _build_parser()
     args = parser.parse_args(
         [
-            "--transport", "http",
-            "--port", "9999",
-            "--host", "127.0.0.1",
-            "--toolsets", "market,brokerage",
+            "--transport",
+            "http",
+            "--port",
+            "9999",
+            "--host",
+            "127.0.0.1",
+            "--toolsets",
+            "market,brokerage",
             "--read-only",
-            "--confirm-trades", "off",
-            "--max-order-notional", "50000",
-            "--allowed-symbols", "AAPL,MSFT",
-            "--profile", "paper",
-            "--env", "live",
+            "--confirm-trades",
+            "off",
+            "--max-order-notional",
+            "50000",
+            "--allowed-symbols",
+            "AAPL,MSFT",
+            "--profile",
+            "paper",
+            "--env",
+            "live",
             "--allow-env-fallback",
         ]
     )

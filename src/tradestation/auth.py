@@ -190,8 +190,8 @@ class AuthManager:
 
         # Build ISO-8601 wall-clock expiry for persistence
         expires_wall = datetime.now(timezone.utc).timestamp() + expires_in
-        expires_at_iso = (
-            datetime.fromtimestamp(expires_wall, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        expires_at_iso = datetime.fromtimestamp(expires_wall, tz=timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
         )
 
         # Build updated credentials
@@ -211,9 +211,7 @@ class AuthManager:
             except Exception as exc:
                 _logger.warning("Failed to persist rotated credentials: %s", exc)
 
-        _logger.info(
-            "Access token acquired; expires in %.0fs", expires_in
-        )
+        _logger.info("Access token acquired; expires in %.0fs", expires_in)
 
     async def _post_token(self, data: dict[str, str]) -> dict[str, Any]:
         """POST to the token endpoint and return the decoded JSON body."""
@@ -231,17 +229,11 @@ class AuthManager:
                     headers={"Content-Type": "application/x-www-form-urlencoded"},
                 )
             except httpx.TimeoutException as exc:
-                raise TimeoutError(
-                    f"Timeout connecting to token endpoint: {exc}"
-                ) from exc
+                raise TimeoutError(f"Timeout connecting to token endpoint: {exc}") from exc
             except httpx.ConnectError as exc:
-                raise NetworkError(
-                    f"Network error connecting to token endpoint: {exc}"
-                ) from exc
+                raise NetworkError(f"Network error connecting to token endpoint: {exc}") from exc
             except httpx.RequestError as exc:
-                raise NetworkError(
-                    f"Request error connecting to token endpoint: {exc}"
-                ) from exc
+                raise NetworkError(f"Request error connecting to token endpoint: {exc}") from exc
 
             if response.status_code == 401:
                 raise RefreshTokenExpired(

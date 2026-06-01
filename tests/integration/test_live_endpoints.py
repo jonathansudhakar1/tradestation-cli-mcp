@@ -158,9 +158,7 @@ class TestOrderExecutionLive:
     ) -> None:
         """D1 preview — NEVER submits. Validates OrderConfirmation against live."""
         acct = _by_type(accounts, "Margin") or accounts[0].account_id
-        req = MarketOrderRequest(
-            account_id=acct, symbol="AAPL", quantity=1, side=Side.BUY
-        )
+        req = MarketOrderRequest(account_id=acct, symbol="AAPL", quantity=1, side=Side.BUY)
         confs = await client.order_execution.confirm_order(req)
         assert confs, "expected a confirmation preview"
         print(f"\nConfirm preview: {confs[0].model_dump(exclude_none=True)}")

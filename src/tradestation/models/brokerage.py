@@ -130,9 +130,7 @@ class Position(_TSModel):
     market_value: float | None = Field(None, alias="MarketValue")
     total_cost: float | None = Field(None, alias="TotalCost")
     unrealized_profit_loss: float | None = Field(None, alias="UnrealizedProfitLoss")
-    unrealized_profit_loss_percent: float | None = Field(
-        None, alias="UnrealizedProfitLossPercent"
-    )
+    unrealized_profit_loss_percent: float | None = Field(None, alias="UnrealizedProfitLossPercent")
     unrealized_profit_loss_qty: float | None = Field(None, alias="UnrealizedProfitLossQty")
     todays_profit_loss: float | None = Field(None, alias="TodaysProfitLoss")
     initial_requirement: float | None = Field(None, alias="InitialRequirement")
@@ -199,15 +197,9 @@ class Wallet(_TSModel):
     account_id: str | None = Field(None, alias="AccountID")
     currency: str | None = Field(None, alias="Currency")
     balance: float | None = Field(None, alias="Balance")
-    available_for_trading: float | None = Field(
-        None, alias="BalanceAvailableForTrading"
-    )
-    available_for_withdrawal: float | None = Field(
-        None, alias="BalanceAvailableForWithdrawal"
-    )
-    unrealized_profit_loss: float | None = Field(
-        None, alias="UnrealizedProfitLossAccountCurrency"
-    )
+    available_for_trading: float | None = Field(None, alias="BalanceAvailableForTrading")
+    available_for_withdrawal: float | None = Field(None, alias="BalanceAvailableForWithdrawal")
+    unrealized_profit_loss: float | None = Field(None, alias="UnrealizedProfitLossAccountCurrency")
     status: str | None = Field(None, alias="Status")
 
 

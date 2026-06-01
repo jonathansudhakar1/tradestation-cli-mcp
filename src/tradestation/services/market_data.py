@@ -91,9 +91,7 @@ class MarketDataService(BaseService):
             params["firstdate"] = firstdate
         if lastdate is not None:
             params["lastdate"] = lastdate
-        raw = await self._transport.request(
-            "GET", f"/marketdata/barcharts/{symbol}", params=params
-        )
+        raw = await self._transport.request("GET", f"/marketdata/barcharts/{symbol}", params=params)
         return parse_bars_response(raw)
 
     async def get_quotes(self, symbols: list[str] | str) -> list[Quote]:
@@ -135,9 +133,7 @@ class MarketDataService(BaseService):
             A list of :class:`~tradestation.models.market_data.Symbol` models.
         """
         syms = _split_symbols(symbols)
-        raw = await self._transport.request(
-            "GET", "/marketdata/symbols/" + ",".join(syms)
-        )
+        raw = await self._transport.request("GET", "/marketdata/symbols/" + ",".join(syms))
         return parse_symbols_response(raw)
 
     async def list_symbol_lists(self) -> list[SymbolList]:
@@ -162,9 +158,7 @@ class MarketDataService(BaseService):
         Returns:
             The :class:`~tradestation.models.market_data.SymbolList`.
         """
-        raw = await self._transport.request(
-            "GET", f"/marketdata/symbollists/{list_id}"
-        )
+        raw = await self._transport.request("GET", f"/marketdata/symbollists/{list_id}")
         return SymbolList.model_validate(raw)
 
     async def get_symbol_list_symbols(self, list_id: str) -> list[Symbol]:
@@ -178,9 +172,7 @@ class MarketDataService(BaseService):
         Returns:
             A list of :class:`~tradestation.models.market_data.Symbol` models.
         """
-        raw = await self._transport.request(
-            "GET", f"/marketdata/symbollists/{list_id}/symbols"
-        )
+        raw = await self._transport.request("GET", f"/marketdata/symbollists/{list_id}/symbols")
         return parse_symbols_response(raw)
 
     async def list_crypto_pairs(self) -> list[str]:
@@ -284,9 +276,7 @@ class MarketDataService(BaseService):
             The raw risk/reward response dict (MaxGain, MaxLoss, RiskRewardRatio…).
         """
         body = {"SpreadPrice": str(entry), "Legs": legs}
-        return await self._transport.request(
-            "POST", "/marketdata/options/riskreward", json=body
-        )
+        return await self._transport.request("POST", "/marketdata/options/riskreward", json=body)
 
     # ------------------------------------------------------------------
     # B.2 — Streaming endpoints

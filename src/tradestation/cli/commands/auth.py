@@ -163,7 +163,9 @@ def auth_set(
     try:
         environment = Environment(env_input.strip().lower())
     except ValueError:
-        console.print(f"[ts.bad]✖[/ts.bad] Unknown environment: {env_input!r}. Use 'live' or 'sim'.")
+        console.print(
+            f"[ts.bad]✖[/ts.bad] Unknown environment: {env_input!r}. Use 'live' or 'sim'."
+        )
         raise typer.Exit(code=1) from None
 
     # --- verify by attempting a token exchange ---
@@ -202,9 +204,7 @@ def auth_set(
         console.print(f"\n[ts.bad]✖[/ts.bad] Failed to write credentials: {exc}")
         raise typer.Exit(code=1) from None
 
-    console.print(
-        f"[ts.ok]✔[/ts.ok] Saved → [ts.mono]{creds_path}[/ts.mono]  (perms 0600)"
-    )
+    console.print(f"[ts.ok]✔[/ts.ok] Saved → [ts.mono]{creds_path}[/ts.mono]  (perms 0600)")
     # Write state.json
     _write_state(creds_path.parent, environment)
 
@@ -631,9 +631,7 @@ def auth_export(
 
     creds_path = _credentials_path(profile)
     if not creds_path.exists():
-        console.print(
-            f"[ts.bad]✖[/ts.bad] No credentials file at [ts.mono]{creds_path}[/ts.mono]"
-        )
+        console.print(f"[ts.bad]✖[/ts.bad] No credentials file at [ts.mono]{creds_path}[/ts.mono]")
         raise typer.Exit(code=3) from None
 
     try:
@@ -681,7 +679,9 @@ def auth_doctor(
         mode = oct(stat.S_IMODE(file_stat.st_mode))
         mode_ok = stat.S_IMODE(file_stat.st_mode) == 0o600
         mode_style = "ts.ok" if mode_ok else "ts.warn"
-        file_node.add(f"[{mode_style}]{'✔' if mode_ok else '⚠'}[/{mode_style}]  Permissions: {mode}")
+        file_node.add(
+            f"[{mode_style}]{'✔' if mode_ok else '⚠'}[/{mode_style}]  Permissions: {mode}"
+        )
         try:
             payload = _load_credentials_plaintext(creds_path)
             scheme = str(payload.get("scheme", "unknown"))

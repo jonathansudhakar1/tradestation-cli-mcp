@@ -562,7 +562,9 @@ def render_error(
 
         console.print(f"\n[ts.bad]✖[/ts.bad] [ts.danger]{category}[/ts.danger]   {err}")
         if err.request_id:
-            console.print(f"  [ts.label]request id  [/ts.label] [ts.mono]{err.request_id}[/ts.mono]")
+            console.print(
+                f"  [ts.label]request id  [/ts.label] [ts.mono]{err.request_id}[/ts.mono]"
+            )
         if err.payload:
             detail = err.payload.get("error_description") or err.payload.get("Message", "")
             if detail:
@@ -571,7 +573,6 @@ def render_error(
         if hint:
             console.print(f"  [ts.label]next step   [/ts.label] {hint}")
         if verbose >= 2:
-
             console.print_exception()
     else:
         console.print(f"\n[ts.bad]✖[/ts.bad] [ts.danger]{type(err).__name__}[/ts.danger]: {err}")
@@ -584,11 +585,15 @@ def _error_hint(err: Exception) -> str:
     from tradestation.errors import AuthError, NoCredentialsError, RefreshTokenExpired
 
     if isinstance(err, RefreshTokenExpired):
-        return "Run `ts auth login` to obtain a new refresh token, or `ts auth set --refresh-token …`."
+        return (
+            "Run `ts auth login` to obtain a new refresh token, or `ts auth set --refresh-token …`."
+        )
     if isinstance(err, NoCredentialsError):
         return "Run `ts auth set` to configure credentials."
     if isinstance(err, AuthError):
-        return "Run `ts auth status` to inspect credentials, or `ts auth refresh` to force a refresh."
+        return (
+            "Run `ts auth status` to inspect credentials, or `ts auth refresh` to force a refresh."
+        )
     return ""
 
 

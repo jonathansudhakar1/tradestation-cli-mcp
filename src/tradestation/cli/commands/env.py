@@ -91,9 +91,7 @@ def env_show(
             "(real money)[/ts.warn]"
         )
     else:
-        console.print(
-            f"[ts.ok]  ✔  Default environment: [bold]{environment.value}[/bold][/ts.ok]"
-        )
+        console.print(f"[ts.ok]  ✔  Default environment: [bold]{environment.value}[/bold][/ts.ok]")
 
 
 # ---------------------------------------------------------------------------

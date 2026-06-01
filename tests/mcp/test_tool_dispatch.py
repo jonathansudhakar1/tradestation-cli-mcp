@@ -268,15 +268,11 @@ class TestDestructiveToolFlow:
         token = _get_data(preview)["confirmation_token"]
 
         # First use — should succeed
-        first = await c.call_tool(
-            "order_place", {"request": request, "confirmation_token": token}
-        )
+        first = await c.call_tool("order_place", {"request": request, "confirmation_token": token})
         assert _get_data(first).get("OrderID") == "987654321"
 
         # Second use — should fail
-        second = await c.call_tool(
-            "order_place", {"request": request, "confirmation_token": token}
-        )
+        second = await c.call_tool("order_place", {"request": request, "confirmation_token": token})
         assert _get_data(second)["status"] == "error"
 
     @pytest.mark.asyncio
@@ -414,9 +410,7 @@ class TestAuditLogIntegration:
                 )
 
             lines = [
-                ln
-                for ln in (tmp_path / "mcp-audit.log").read_text().strip().split("\n")
-                if ln
+                ln for ln in (tmp_path / "mcp-audit.log").read_text().strip().split("\n") if ln
             ]
             # Two "executing"/"token_issued" and two "success" lines
             assert len(lines) >= 2
@@ -912,9 +906,7 @@ class TestBrokerageToolDispatch:
         from fastmcp import Client
 
         c: Client = mcp_client  # type: ignore[assignment]
-        result = await c.call_tool(
-            "brokerage_stream_positions", {"account_ids": ["11111111"]}
-        )
+        result = await c.call_tool("brokerage_stream_positions", {"account_ids": ["11111111"]})
         assert result.is_error is False
         data = _get_data(result)
         assert isinstance(data, list)
@@ -925,9 +917,7 @@ class TestBrokerageToolDispatch:
         from fastmcp import Client
 
         c: Client = mcp_client  # type: ignore[assignment]
-        result = await c.call_tool(
-            "brokerage_stream_wallets", {"account_ids": ["11111111"]}
-        )
+        result = await c.call_tool("brokerage_stream_wallets", {"account_ids": ["11111111"]})
         assert result.is_error is False
         data = _get_data(result)
         assert isinstance(data, list)
@@ -975,9 +965,7 @@ class TestMarketDataToolDispatch:
         from fastmcp import Client
 
         c: Client = mcp_client  # type: ignore[assignment]
-        result = await c.call_tool(
-            "market_data_get_symbol_list_symbols", {"list_id": "list1"}
-        )
+        result = await c.call_tool("market_data_get_symbol_list_symbols", {"list_id": "list1"})
         assert result.is_error is False
         data = _get_data(result)
         assert isinstance(data, list)
@@ -988,9 +976,7 @@ class TestMarketDataToolDispatch:
         from fastmcp import Client
 
         c: Client = mcp_client  # type: ignore[assignment]
-        result = await c.call_tool(
-            "market_data_get_option_expirations", {"underlying": "AAPL"}
-        )
+        result = await c.call_tool("market_data_get_option_expirations", {"underlying": "AAPL"})
         assert result.is_error is False
         data = _get_data(result)
         assert isinstance(data, list)
@@ -1057,9 +1043,7 @@ class TestMarketDataToolDispatch:
         from fastmcp import Client
 
         c: Client = mcp_client  # type: ignore[assignment]
-        result = await c.call_tool(
-            "market_data_stream_quotes", {"symbols": ["AAPL", "MSFT"]}
-        )
+        result = await c.call_tool("market_data_stream_quotes", {"symbols": ["AAPL", "MSFT"]})
         assert result.is_error is False
         data = _get_data(result)
         assert isinstance(data, list)
@@ -1081,9 +1065,7 @@ class TestMarketDataToolDispatch:
         from fastmcp import Client
 
         c: Client = mcp_client  # type: ignore[assignment]
-        result = await c.call_tool(
-            "market_data_stream_depth_aggregates", {"symbol": "AAPL"}
-        )
+        result = await c.call_tool("market_data_stream_depth_aggregates", {"symbol": "AAPL"})
         assert result.is_error is False
         data = _get_data(result)
         assert isinstance(data, list)
@@ -1112,7 +1094,12 @@ class TestMarketDataToolDispatch:
             "market_data_stream_option_quotes",
             {
                 "legs": [
-                    {"Symbol": "AAPL", "Strike": 180.0, "OptionType": "C", "Expiration": "2026-06-20"}
+                    {
+                        "Symbol": "AAPL",
+                        "Strike": 180.0,
+                        "OptionType": "C",
+                        "Expiration": "2026-06-20",
+                    }
                 ]
             },
         )
@@ -1183,9 +1170,7 @@ class TestOverrides:
     """Coverage for overrides.py placeholder tools."""
 
     @pytest.mark.asyncio
-    async def test_order_place_override_returns_not_implemented(
-        self, fake_client: object
-    ) -> None:
+    async def test_order_place_override_returns_not_implemented(self, fake_client: object) -> None:
         """order_place_override returns a placeholder not-implemented response."""
         from fastmcp import Client, FastMCP
 

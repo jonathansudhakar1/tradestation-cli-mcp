@@ -185,28 +185,40 @@ def _render_csv(quotes: Sequence[object], *, delimiter: str, console: object) ->
     from tradestation.models.market_data import Quote
 
     fields = [
-        "symbol", "last", "net_change", "net_change_pct", "bid", "bid_size",
-        "ask", "ask_size", "volume", "open", "high", "low",
+        "symbol",
+        "last",
+        "net_change",
+        "net_change_pct",
+        "bid",
+        "bid_size",
+        "ask",
+        "ask_size",
+        "volume",
+        "open",
+        "high",
+        "low",
     ]
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter=delimiter)
     writer.writerow(fields)
     for q in quotes:
         assert isinstance(q, Quote)
-        writer.writerow([
-            q.symbol,
-            q.last,
-            q.net_change,
-            q.net_change_pct,
-            q.bid,
-            q.bid_size,
-            q.ask,
-            q.ask_size,
-            q.volume,
-            q.open,
-            q.high,
-            q.low,
-        ])
+        writer.writerow(
+            [
+                q.symbol,
+                q.last,
+                q.net_change,
+                q.net_change_pct,
+                q.bid,
+                q.bid_size,
+                q.ask,
+                q.ask_size,
+                q.volume,
+                q.open,
+                q.high,
+                q.low,
+            ]
+        )
     sys.stdout.write(buf.getvalue())
 
 
@@ -277,12 +289,16 @@ def bars_cmd(
         from rich.table import Table
 
         now = datetime.now(timezone.utc).strftime("%H:%M:%S")
-        cli.console.print(render_banner(f"Bars {symbol}", f"{len(bars)} bars",
-                                        cli.environment.value, now))
+        cli.console.print(
+            render_banner(f"Bars {symbol}", f"{len(bars)} bars", cli.environment.value, now)
+        )
         tbl = Table(box=box.ROUNDED, header_style="ts.header")
         for col in ("Time", "Open", "High", "Low", "Close", "Volume"):
-            tbl.add_column(col, justify="right" if col != "Time" else "left",
-                           style="ts.price" if col not in ("Time", "Volume") else None)
+            tbl.add_column(
+                col,
+                justify="right" if col != "Time" else "left",
+                style="ts.price" if col not in ("Time", "Volume") else None,
+            )
         for b in bars:
             tbl.add_row(
                 (b.timestamp or "")[:19].replace("T", " "),

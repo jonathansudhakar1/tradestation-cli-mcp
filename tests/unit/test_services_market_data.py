@@ -303,14 +303,26 @@ class TestGetQuotesErrors:
 _CANNED_BARS = {
     "Bars": [
         {
-            "Open": "177.10", "High": "178.20", "Low": "176.90", "Close": "178.05",
-            "TimeStamp": "2026-06-01T13:30:00Z", "TotalVolume": "1200000",
-            "TotalTrades": "8500", "IsRealtime": False, "IsEndOfHistory": False,
+            "Open": "177.10",
+            "High": "178.20",
+            "Low": "176.90",
+            "Close": "178.05",
+            "TimeStamp": "2026-06-01T13:30:00Z",
+            "TotalVolume": "1200000",
+            "TotalTrades": "8500",
+            "IsRealtime": False,
+            "IsEndOfHistory": False,
         },
         {
-            "Open": "178.05", "High": "179.02", "Low": "177.80", "Close": "178.45",
-            "TimeStamp": "2026-06-01T13:31:00Z", "TotalVolume": "980000",
-            "TotalTrades": "7200", "IsRealtime": False, "IsEndOfHistory": True,
+            "Open": "178.05",
+            "High": "179.02",
+            "Low": "177.80",
+            "Close": "178.45",
+            "TimeStamp": "2026-06-01T13:31:00Z",
+            "TotalVolume": "980000",
+            "TotalTrades": "7200",
+            "IsRealtime": False,
+            "IsEndOfHistory": True,
         },
     ]
 }
@@ -387,12 +399,18 @@ class TestSymbolsAndLists:
         respx.get(f"{_BASE}/marketdata/symbols/AAPL,ESM26").mock(
             return_value=httpx.Response(
                 200,
-                json={"Symbols": [
-                    {"Symbol": "AAPL", "AssetType": "STOCK", "Exchange": "NASDAQ",
-                     "Currency": "USD"},
-                    {"Symbol": "ESM26", "AssetType": "FUTURE", "Root": "ES",
-                     "Currency": "USD"},
-                ], "Errors": []},
+                json={
+                    "Symbols": [
+                        {
+                            "Symbol": "AAPL",
+                            "AssetType": "STOCK",
+                            "Exchange": "NASDAQ",
+                            "Currency": "USD",
+                        },
+                        {"Symbol": "ESM26", "AssetType": "FUTURE", "Root": "ES", "Currency": "USD"},
+                    ],
+                    "Errors": [],
+                },
             )
         )
         async with httpx.AsyncClient() as http:
@@ -408,9 +426,11 @@ class TestSymbolsAndLists:
         respx.get(f"{_BASE}/marketdata/symbollists").mock(
             return_value=httpx.Response(
                 200,
-                json={"SymbolLists": [
-                    {"SymbolListID": "abc", "Name": "Faves", "Count": 12},
-                ]},
+                json={
+                    "SymbolLists": [
+                        {"SymbolListID": "abc", "Name": "Faves", "Count": 12},
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:
@@ -450,9 +470,7 @@ class TestCrypto:
     @respx.mock
     async def test_list_crypto_pairs(self) -> None:
         respx.get(f"{_BASE}/marketdata/symbollists/cryptopairs/symbolnames").mock(
-            return_value=httpx.Response(
-                200, json={"SymbolNames": ["BTCUSD", "ETHUSD", "LTCUSD"]}
-            )
+            return_value=httpx.Response(200, json={"SymbolNames": ["BTCUSD", "ETHUSD", "LTCUSD"]})
         )
         async with httpx.AsyncClient() as http:
             svc = MarketDataService(_make_transport(http))
@@ -468,10 +486,12 @@ class TestOptions:
         route = respx.get(f"{_BASE}/marketdata/options/expirations/AAPL").mock(
             return_value=httpx.Response(
                 200,
-                json={"Expirations": [
-                    {"Date": "2026-06-19T00:00:00Z", "Type": "Monthly"},
-                    {"Date": "2026-06-26T00:00:00Z", "Type": "Weekly"},
-                ]},
+                json={
+                    "Expirations": [
+                        {"Date": "2026-06-19T00:00:00Z", "Type": "Monthly"},
+                        {"Date": "2026-06-26T00:00:00Z", "Type": "Weekly"},
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:
@@ -505,10 +525,12 @@ class TestOptions:
         respx.get(f"{_BASE}/marketdata/options/spreadtypes").mock(
             return_value=httpx.Response(
                 200,
-                json={"SpreadTypes": [
-                    {"Name": "Single", "StrikeInterval": False, "ExpirationInterval": False},
-                    {"Name": "Vertical", "StrikeInterval": True, "ExpirationInterval": False},
-                ]},
+                json={
+                    "SpreadTypes": [
+                        {"Name": "Single", "StrikeInterval": False, "ExpirationInterval": False},
+                        {"Name": "Vertical", "StrikeInterval": True, "ExpirationInterval": False},
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:
@@ -523,19 +545,26 @@ class TestOptions:
         route = respx.post(f"{_BASE}/marketdata/options/riskreward").mock(
             return_value=httpx.Response(
                 200,
-                json={"MaxGain": "330", "MaxLoss": "170", "RiskRewardRatio": "1.94",
-                      "Commission": "0"},
+                json={
+                    "MaxGain": "330",
+                    "MaxLoss": "170",
+                    "RiskRewardRatio": "1.94",
+                    "Commission": "0",
+                },
             )
         )
         async with httpx.AsyncClient() as http:
             svc = MarketDataService(_make_transport(http))
             res = await svc.option_risk_reward(
-                [{"Symbol": "AAPL 260620C200", "Ratio": 1, "OpenPrice": "5.40"},
-                 {"Symbol": "AAPL 260620C210", "Ratio": -1, "OpenPrice": "2.10"}],
+                [
+                    {"Symbol": "AAPL 260620C200", "Ratio": 1, "OpenPrice": "5.40"},
+                    {"Symbol": "AAPL 260620C210", "Ratio": -1, "OpenPrice": "2.10"},
+                ],
                 entry=3.30,
             )
         assert route.called
         import json as _json
+
         body = _json.loads(route.calls.last.request.content)
         assert body["SpreadPrice"] == "3.3"
         assert len(body["Legs"]) == 2

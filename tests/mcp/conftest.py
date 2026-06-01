@@ -212,14 +212,10 @@ class FakeBrokerageService:
     async def get_orders(self, account_ids: list[str]) -> list[dict]:
         return CANNED_ORDERS
 
-    async def get_orders_by_id(
-        self, account_ids: list[str], order_ids: list[str]
-    ) -> list[dict]:
+    async def get_orders_by_id(self, account_ids: list[str], order_ids: list[str]) -> list[dict]:
         return [o for o in CANNED_ORDERS if o["OrderID"] in order_ids] or CANNED_ORDERS
 
-    async def get_historical_orders(
-        self, account_ids: list[str], since: object
-    ) -> list[dict]:
+    async def get_historical_orders(self, account_ids: list[str], since: object) -> list[dict]:
         return CANNED_ORDERS
 
     async def get_historical_orders_by_id(
@@ -233,9 +229,7 @@ class FakeBrokerageService:
     async def stream_orders(self, account_ids: list[str]) -> list[dict]:
         return CANNED_ORDERS[:1]
 
-    async def stream_orders_by_id(
-        self, account_ids: list[str], order_ids: list[str]
-    ) -> list[dict]:
+    async def stream_orders_by_id(self, account_ids: list[str], order_ids: list[str]) -> list[dict]:
         return CANNED_ORDERS[:1]
 
     async def stream_positions(self, account_ids: list[str]) -> list[dict]:

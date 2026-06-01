@@ -57,10 +57,18 @@ class TestListAccounts:
                 200,
                 json={
                     "Accounts": [
-                        {"AccountID": "11111111", "AccountType": "Margin",
-                         "Currency": "USD", "Status": "Active"},
-                        {"AccountID": "22222222", "AccountType": "Cash",
-                         "Currency": "USD", "Status": "Active"},
+                        {
+                            "AccountID": "11111111",
+                            "AccountType": "Margin",
+                            "Currency": "USD",
+                            "Status": "Active",
+                        },
+                        {
+                            "AccountID": "22222222",
+                            "AccountType": "Cash",
+                            "Currency": "USD",
+                            "Status": "Active",
+                        },
                     ]
                 },
             )
@@ -167,19 +175,40 @@ class TestPositions:
                 200,
                 json={
                     "Positions": [
-                        {"AccountID": "11111111", "Symbol": "AAPL", "AssetType": "STOCK",
-                         "Quantity": "500", "LongShort": "Long", "AveragePrice": "162.10",
-                         "Last": "178.45", "MarketValue": "89225.00",
-                         "UnrealizedProfitLoss": "8175.00",
-                         "UnrealizedProfitLossPercent": "10.09"},
-                        {"AccountID": "11111111", "Symbol": "ESM26", "AssetType": "FUTURE",
-                         "Quantity": "2", "LongShort": "Long", "AveragePrice": "5300.00",
-                         "Last": "5318.50", "MarketValue": "531850.00",
-                         "UnrealizedProfitLoss": "1850.00"},
-                        {"AccountID": "11111111", "Symbol": "BTCUSD", "AssetType": "CRYPTO",
-                         "Quantity": "0.5", "LongShort": "Long", "AveragePrice": "68000.00",
-                         "Last": "71200.00", "MarketValue": "35600.00",
-                         "UnrealizedProfitLoss": "1600.00"},
+                        {
+                            "AccountID": "11111111",
+                            "Symbol": "AAPL",
+                            "AssetType": "STOCK",
+                            "Quantity": "500",
+                            "LongShort": "Long",
+                            "AveragePrice": "162.10",
+                            "Last": "178.45",
+                            "MarketValue": "89225.00",
+                            "UnrealizedProfitLoss": "8175.00",
+                            "UnrealizedProfitLossPercent": "10.09",
+                        },
+                        {
+                            "AccountID": "11111111",
+                            "Symbol": "ESM26",
+                            "AssetType": "FUTURE",
+                            "Quantity": "2",
+                            "LongShort": "Long",
+                            "AveragePrice": "5300.00",
+                            "Last": "5318.50",
+                            "MarketValue": "531850.00",
+                            "UnrealizedProfitLoss": "1850.00",
+                        },
+                        {
+                            "AccountID": "11111111",
+                            "Symbol": "BTCUSD",
+                            "AssetType": "CRYPTO",
+                            "Quantity": "0.5",
+                            "LongShort": "Long",
+                            "AveragePrice": "68000.00",
+                            "Last": "71200.00",
+                            "MarketValue": "35600.00",
+                            "UnrealizedProfitLoss": "1600.00",
+                        },
                     ],
                     "Errors": [],
                 },
@@ -212,10 +241,18 @@ class TestOrders:
                 200,
                 json={
                     "Orders": [
-                        {"AccountID": "11111111", "OrderID": "835711", "Status": "OPN",
-                         "StatusDescription": "Sent", "OrderType": "Limit",
-                         "Symbol": "AAPL", "Quantity": "100", "FilledQuantity": "0",
-                         "LimitPrice": "178.00", "Duration": "DAY"},
+                        {
+                            "AccountID": "11111111",
+                            "OrderID": "835711",
+                            "Status": "OPN",
+                            "StatusDescription": "Sent",
+                            "OrderType": "Limit",
+                            "Symbol": "AAPL",
+                            "Quantity": "100",
+                            "FilledQuantity": "0",
+                            "LimitPrice": "178.00",
+                            "Duration": "DAY",
+                        },
                     ]
                 },
             )
@@ -231,9 +268,9 @@ class TestOrders:
     @pytest.mark.asyncio
     @respx.mock
     async def test_get_orders_by_id_path(self) -> None:
-        route = respx.get(
-            f"{_BASE}/brokerage/accounts/11111111/orders/835711,835712"
-        ).mock(return_value=httpx.Response(200, json={"Orders": []}))
+        route = respx.get(f"{_BASE}/brokerage/accounts/11111111/orders/835711,835712").mock(
+            return_value=httpx.Response(200, json={"Orders": []})
+        )
         async with httpx.AsyncClient() as http:
             svc = await _svc(http)
             await svc.get_orders_by_id(["11111111"], ["835711", "835712"])
@@ -249,9 +286,9 @@ class TestHistoricalOrders:
     @pytest.mark.asyncio
     @respx.mock
     async def test_historical_orders_since_param(self) -> None:
-        route = respx.get(
-            f"{_BASE}/brokerage/accounts/11111111/historicalorders"
-        ).mock(return_value=httpx.Response(200, json={"Orders": []}))
+        route = respx.get(f"{_BASE}/brokerage/accounts/11111111/historicalorders").mock(
+            return_value=httpx.Response(200, json={"Orders": []})
+        )
         async with httpx.AsyncClient() as http:
             svc = await _svc(http)
             await svc.get_historical_orders(["11111111"], since=date(2026, 1, 1))
@@ -261,13 +298,19 @@ class TestHistoricalOrders:
     @pytest.mark.asyncio
     @respx.mock
     async def test_historical_orders_by_id(self) -> None:
-        route = respx.get(
-            f"{_BASE}/brokerage/accounts/11111111/historicalorders/835711"
-        ).mock(
+        route = respx.get(f"{_BASE}/brokerage/accounts/11111111/historicalorders/835711").mock(
             return_value=httpx.Response(
                 200,
-                json={"Orders": [{"OrderID": "835711", "Status": "FLL",
-                                  "Symbol": "AAPL", "FilledPrice": "178.01"}]},
+                json={
+                    "Orders": [
+                        {
+                            "OrderID": "835711",
+                            "Status": "FLL",
+                            "Symbol": "AAPL",
+                            "FilledPrice": "178.01",
+                        }
+                    ]
+                },
             )
         )
         async with httpx.AsyncClient() as http:
@@ -291,10 +334,18 @@ class TestWallets:
                 200,
                 json={
                     "Wallets": [
-                        {"AccountID": "11111111", "Currency": "BTC",
-                         "Balance": "0.5", "AvailableBalance": "0.5"},
-                        {"AccountID": "11111111", "Currency": "USD",
-                         "Balance": "5000.00", "AvailableBalance": "5000.00"},
+                        {
+                            "AccountID": "11111111",
+                            "Currency": "BTC",
+                            "Balance": "0.5",
+                            "AvailableBalance": "0.5",
+                        },
+                        {
+                            "AccountID": "11111111",
+                            "Currency": "USD",
+                            "Balance": "5000.00",
+                            "AvailableBalance": "5000.00",
+                        },
                     ]
                 },
             )
@@ -318,8 +369,7 @@ class TestErrors:
     @respx.mock
     async def test_api_error_propagates(self) -> None:
         respx.get(f"{_BASE}/brokerage/accounts").mock(
-            return_value=httpx.Response(500, json={"Error": "ServerError",
-                                                    "Message": "boom"})
+            return_value=httpx.Response(500, json={"Error": "ServerError", "Message": "boom"})
         )
         async with httpx.AsyncClient() as http:
             svc = await _svc(http)

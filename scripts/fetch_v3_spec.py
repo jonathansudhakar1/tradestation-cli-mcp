@@ -175,10 +175,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--env",
         choices=["sim", "live"],
         default=None,
-        help=(
-            "API environment to fetch the spec from. "
-            "Default: 'sim' (or TS_ENV env var if set)."
-        ),
+        help=("API environment to fetch the spec from. Default: 'sim' (or TS_ENV env var if set)."),
     )
     return parser.parse_args(argv)
 

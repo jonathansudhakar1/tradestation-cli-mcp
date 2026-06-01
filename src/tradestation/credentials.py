@@ -128,9 +128,7 @@ def _default_credentials_path() -> Path:
 
     Respects the ``TS_CREDENTIALS`` environment variable when set.
     """
-    return Path(
-        os.environ.get("TS_CREDENTIALS", str(Path.home() / ".tscli" / "credentials"))
-    )
+    return Path(os.environ.get("TS_CREDENTIALS", str(Path.home() / ".tscli" / "credentials")))
 
 
 # Public alias for consumers (CLI, MCP, downstream code).
@@ -206,9 +204,7 @@ def _encrypt_payload(payload: dict[str, Any], use_keyring: bool = True) -> dict[
                 _logger.debug("Generated new Fernet key stored in OS keyring")
                 key = generated
             else:
-                _logger.warning(
-                    "Keyring unavailable; falling back to PBKDF2 passphrase derivation"
-                )
+                _logger.warning("Keyring unavailable; falling back to PBKDF2 passphrase derivation")
                 use_keyring = False
 
     if not use_keyring:
@@ -270,8 +266,7 @@ def _decrypt_envelope(envelope: dict[str, Any]) -> dict[str, Any]:
         passphrase = os.environ.get("TSCLI_PASSPHRASE", "")
         if not passphrase:
             raise AuthError(
-                "Credentials were encrypted with a passphrase. "
-                "Set TSCLI_PASSPHRASE to decrypt."
+                "Credentials were encrypted with a passphrase. Set TSCLI_PASSPHRASE to decrypt."
             )
         key = _derive_key_pbkdf2(passphrase, salt)
 
@@ -478,9 +473,7 @@ def from_env() -> Credentials:
 
     refresh_token = os.environ.get("TS_REFRESH_TOKEN", "")
     if not refresh_token:
-        raise NoCredentialsError(
-            "TS_REFRESH_TOKEN environment variable is not set."
-        )
+        raise NoCredentialsError("TS_REFRESH_TOKEN environment variable is not set.")
 
     client_secret = os.environ.get("TS_CLIENT_SECRET", "")
     scope = os.environ.get("TS_SCOPE", _DEFAULT_SCOPE)

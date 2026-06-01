@@ -115,9 +115,7 @@ def _emit(
         try:
             import yaml  # type: ignore[import-untyped]
 
-            sys.stdout.write(
-                yaml.safe_dump([m.model_dump(by_alias=False) for m in models])
-            )
+            sys.stdout.write(yaml.safe_dump([m.model_dump(by_alias=False) for m in models]))
         except ImportError:
             for m in models:
                 sys.stdout.write(json.dumps(m.model_dump(by_alias=False), default=str) + "\n")
@@ -152,8 +150,13 @@ def accounts_cmd(ctx: typer.Context) -> None:
     """
     cli = CLIContext.from_typer(ctx)
     accounts = _run(cli, cli.client.brokerage.list_accounts())
-    _emit(cli, accounts, table_fn=table_accounts, operation="Accounts",
-          scope=f"{len(accounts)} account{'s' if len(accounts) != 1 else ''}")
+    _emit(
+        cli,
+        accounts,
+        table_fn=table_accounts,
+        operation="Accounts",
+        scope=f"{len(accounts)} account{'s' if len(accounts) != 1 else ''}",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +176,7 @@ def balances_cmd(
     cli = CLIContext.from_typer(ctx)
     ids = _split_ids(account_ids)
     balances = _run(cli, cli.client.brokerage.get_balances(ids))
-    _emit(cli, balances, table_fn=table_balances, operation="Balances",
-          scope=",".join(ids))
+    _emit(cli, balances, table_fn=table_balances, operation="Balances", scope=",".join(ids))
 
 
 @app.command(name="bod")
@@ -189,8 +191,7 @@ def bod_cmd(
     cli = CLIContext.from_typer(ctx)
     ids = _split_ids(account_ids)
     balances = _run(cli, cli.client.brokerage.get_bod_balances(ids))
-    _emit(cli, balances, table_fn=table_balances, operation="BOD Balances",
-          scope=",".join(ids))
+    _emit(cli, balances, table_fn=table_balances, operation="BOD Balances", scope=",".join(ids))
 
 
 # ---------------------------------------------------------------------------
@@ -210,8 +211,13 @@ def positions_cmd(
     cli = CLIContext.from_typer(ctx)
     ids = _split_ids(account_ids)
     positions = _run(cli, cli.client.brokerage.get_positions(ids))
-    _emit(cli, positions, table_fn=table_positions, operation="Positions",
-          scope=f"{len(positions)} open")
+    _emit(
+        cli,
+        positions,
+        table_fn=table_positions,
+        operation="Positions",
+        scope=f"{len(positions)} open",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -231,8 +237,7 @@ def orders_cmd(
     cli = CLIContext.from_typer(ctx)
     ids = _split_ids(account_ids)
     orders = _run(cli, cli.client.brokerage.get_orders(ids))
-    _emit(cli, orders, table_fn=table_orders, operation="Orders",
-          scope=",".join(ids))
+    _emit(cli, orders, table_fn=table_orders, operation="Orders", scope=",".join(ids))
 
 
 @app.command(name="order")
@@ -248,8 +253,7 @@ def order_cmd(
     cli = CLIContext.from_typer(ctx)
     oids = _split_ids(order_ids)
     orders = _run(cli, cli.client.brokerage.get_orders_by_id([account_id], oids))
-    _emit(cli, orders, table_fn=table_orders, operation="Order",
-          scope=",".join(oids))
+    _emit(cli, orders, table_fn=table_orders, operation="Order", scope=",".join(oids))
 
 
 # ---------------------------------------------------------------------------
@@ -273,8 +277,13 @@ def historical_cmd(
     ids = _split_ids(account_ids)
     since_date: date = since.date()
     orders = _run(cli, cli.client.brokerage.get_historical_orders(ids, since=since_date))
-    _emit(cli, orders, table_fn=table_orders, operation="Historical Orders",
-          scope=f"since {since_date.isoformat()}")
+    _emit(
+        cli,
+        orders,
+        table_fn=table_orders,
+        operation="Historical Orders",
+        scope=f"since {since_date.isoformat()}",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -314,5 +323,4 @@ def wallets_cmd(
     cli = CLIContext.from_typer(ctx)
     ids = _split_ids(account_ids)
     wallets = _run(cli, cli.client.brokerage.get_wallets(ids))
-    _emit(cli, wallets, table_fn=_table_wallets, operation="Wallets",
-          scope=",".join(ids))
+    _emit(cli, wallets, table_fn=_table_wallets, operation="Wallets", scope=",".join(ids))
