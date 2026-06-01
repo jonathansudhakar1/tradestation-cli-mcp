@@ -1,14 +1,20 @@
-# tradestationcli — TradeStation Python Library, CLI & MCP Server
+# tradestation-cli-mcp
 
-A monorepo containing three pip-installable, independently versioned packages built on top of the [TradeStation v3 REST API](https://api.tradestation.com/docs/):
+A single Python package that provides three things on top of the [TradeStation v3 REST API](https://api.tradestation.com/docs/):
 
-| Package | Purpose | Install |
+| Use it as… | What it gives you | How to invoke |
 |---|---|---|
-| `tradestation` | Typed Python client library (sync + async, streaming, models) | `pip install tradestation` |
-| `tscli` | Rich-formatted CLI wrapping the library | `pip install tscli` |
-| `tradestation-mcp` | Local MCP server exposing the API to LLM tools (Claude, Cursor, …) | `pip install tradestation-mcp` |
+| A **Python library** | `TradeStationClient` (sync & async), Pydantic models, streaming iterators | `import tradestation` |
+| A **CLI** | `ts` — Rich-formatted, colorful command-line tool covering every endpoint | `ts …` |
+| An **MCP server** | `ts-mcp` — local Model Context Protocol server for Claude Code, Cursor, Windsurf, … | `ts-mcp` |
 
-The CLI and MCP server depend on the library; the library has zero opinions about how it is consumed.
+**One install gives you all three:**
+
+```bash
+pip install tradestation-cli-mcp
+```
+
+The package distributes the **library** (`tradestation/…`), a **CLI** built on top of it (`tradestation/cli/…`), and an **MCP server** also built on top of it (`tradestation/mcp/…`). The library is the only thing that speaks HTTP — the CLI and MCP server are thin layers over it.
 
 ---
 
@@ -21,7 +27,7 @@ The CLI and MCP server depend on the library; the library has zero opinions abou
 Read in this order:
 
 1. **[docs/00-overview.md](docs/00-overview.md)** — architecture, goals, non-goals, prior art studied.
-2. **[docs/01-project-structure.md](docs/01-project-structure.md)** — monorepo layout, packaging, versioning, release flow.
+2. **[docs/01-project-structure.md](docs/01-project-structure.md)** — single-package layout, packaging, entry points, release flow.
 3. **[docs/02-auth-and-credentials.md](docs/02-auth-and-credentials.md)** — refresh-token flow, `~/.tscli/credentials` format, encryption, refresh policy.
 4. **[docs/03-endpoint-inventory.md](docs/03-endpoint-inventory.md)** — canonical list of **every** TradeStation v3 endpoint we wrap.
 5. **[docs/04-cli-design.md](docs/04-cli-design.md)** — full CLI surface, one command per endpoint, examples.
@@ -33,6 +39,9 @@ Read in this order:
 ## Quick example (target UX)
 
 ```bash
+# One-time install
+pip install tradestation-cli-mcp
+
 # One-time credential setup (prompts for everything; stores encrypted)
 ts auth set
 
@@ -70,3 +79,7 @@ order = ts.order_execution.place_order(MarketOrderRequest(
     account_id="11111111", symbol="AAPL", quantity=100, side="Buy"
 ))
 ```
+
+## Why one package and not three?
+
+A single distribution means one version to pin, one release to cut, one install command, and one credential store guaranteed to be in sync across the library, CLI, and MCP server. The internal layering (library → CLI / library → MCP) is preserved as sub-packages, so the architecture story is unchanged — only the packaging is unified. See [docs/01-project-structure.md](docs/01-project-structure.md) for the layout.

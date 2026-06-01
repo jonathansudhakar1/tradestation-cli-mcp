@@ -1,6 +1,8 @@
-# 06 — MCP Server (`tradestation-mcp`)
+# 06 — MCP Server (`ts-mcp`)
 
 A local [Model Context Protocol](https://modelcontextprotocol.io) server that exposes the TradeStation API to MCP-capable clients (Claude Code, Claude Desktop, Cursor, Windsurf, VS Code, Gemini CLI, …). Built on **[FastMCP](https://github.com/jlowin/fastmcp)**.
+
+Ships as part of the `tradestation-cli-mcp` distribution. `pip install tradestation-cli-mcp` registers the `ts-mcp` console script; no separate MCP install. Source lives at `src/tradestation/mcp/`.
 
 Architecture inspiration: Alpaca's official [alpaca-mcp-server v2](https://github.com/alpacahq/alpaca-mcp-server) — FastMCP + OpenAPI-driven tool registration, toolset allowlists, stdio+HTTP transports, hand-crafted overrides for destructive trading.
 
@@ -9,7 +11,7 @@ We add: persistent **encrypted** on-disk credentials shared with the CLI (Alpaca
 ## Run
 
 ```bash
-pip install tradestation-mcp
+pip install tradestation-cli-mcp
 ts-mcp                                       # stdio (default)
 ts-mcp --transport http --port 8765          # local HTTP/SSE
 ts-mcp --toolsets market,brokerage           # disable trading tools
@@ -21,7 +23,7 @@ ts-mcp --confirm-trades require              # default; ask for explicit confirm
 
 ```bash
 # uvx-style one-shot (no install)
-uvx tradestation-mcp
+uvx --from tradestation-cli-mcp ts-mcp
 ```
 
 ### MCP client config snippets
@@ -146,7 +148,7 @@ In addition to tools, the server exposes:
 
 ## Versioning & compat
 
-`tradestation-mcp` pins `tradestation>=x.y.z,<x.(y+1)` to avoid silent breakage when models change.
+Library, CLI, and MCP server ship from the same commit and the same PyPI version (`tradestation-cli-mcp` x.y.z). There is no inter-package pin to maintain — version drift across the three faces is structurally impossible.
 
 ## Test posture
 

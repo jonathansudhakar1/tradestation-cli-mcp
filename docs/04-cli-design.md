@@ -2,6 +2,8 @@
 
 The CLI is `ts`. It is the **only** way most users will touch the API. Every endpoint in [03-endpoint-inventory.md](03-endpoint-inventory.md) has a corresponding command — full coverage is enforced by an integration test that introspects the command tree against the inventory.
 
+Shipped as part of the `tradestation-cli-mcp` distribution. `pip install tradestation-cli-mcp` registers the `ts` console script; no separate CLI install. Source lives at `src/tradestation/cli/`.
+
 Built on **Typer** (commands), **Click** (parameter machinery via Typer), and **Rich** (rendering — full palette in [07-output-style.md](07-output-style.md)).
 
 ## Top-level command tree

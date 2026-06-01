@@ -1,6 +1,8 @@
 # 05 — Python Library (`tradestation`)
 
-The package the CLI and the MCP server share. Drop-in usable on its own (`pip install tradestation`) for users who want a programmatic interface.
+The library is the `tradestation` Python package: `client.py`, `services/`, `models/`, `auth.py`, `transport.py`, `streaming.py`, `errors.py`, `enums.py`. It lives at `src/tradestation/` (excluding the `cli/` and `mcp/` sub-packages, which depend on it).
+
+Distributed as part of `tradestation-cli-mcp`. `pip install tradestation-cli-mcp` makes it importable as `import tradestation`. (The distribution name and import name differ — same pattern as `scikit-learn` → `import sklearn`.) Users who want only the library simply don't invoke the `ts` or `ts-mcp` console scripts; nothing else changes.
 
 ## Design principles
 
@@ -210,7 +212,7 @@ df = ts.market_data.get_bars("AAPL", interval=1, unit=BarUnit.MINUTE, barsback=2
 df_quotes = ts.market_data.get_quotes(["AAPL","MSFT"]).to_frame()
 ```
 
-Only available when `pip install "tradestation[pandas]"`.
+Only available when `pip install "tradestation-cli-mcp[pandas]"`.
 
 ## Testing posture
 
