@@ -35,6 +35,7 @@ Read in this order:
 7. **[docs/06-mcp-server.md](docs/06-mcp-server.md)** — FastMCP tool layout, transport, toolsets, safety guards.
 8. **[docs/07-output-style.md](docs/07-output-style.md)** — Rich color palette, table formats, progress, prompts.
 9. **[docs/08-references.md](docs/08-references.md)** — links to TradeStation docs, prior art repos.
+10. **[docs/09-codegen-strategy.md](docs/09-codegen-strategy.md)** — hybrid generator-from-swagger + hand-curated services; spec pin + drift detection.
 
 ## Quick example (target UX)
 

@@ -1,0 +1,14 @@
+upstream:        https://github.com/tradestation/api-docs
+file:            spec/swagger.yaml
+branch:          master
+commit_sha:      edc6c1e1e825895797e456be3264a27cd3b7903a
+fetched_at:      2026-06-01T08:00:23Z
+fetched_size:    183438 bytes
+sha256:          061b6b092458c906fbd7413abf79b07cbbe484b9c3de2142e5d8b134479b03b4
+
+spec_version:    swagger 2.0
+api_version:     v2  (NOTE: TradeStation marks v3 as recommended; the v2
+                 swagger here is the only published spec we found. The v3
+                 swagger lives behind auth at https://api.tradestation.com/v3/swagger.json
+                 — 401 without a Bearer token. See docs/09-codegen-strategy.md
+                 for how we treat this two-track situation.)
