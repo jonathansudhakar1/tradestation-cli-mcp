@@ -251,6 +251,59 @@ def _global_options(
         )
 
 
+# Global options live on the root callback, so Click expects them *before* the
+# subcommand (e.g. `ts --output json brokerage accounts`). To also accept the
+# more natural trailing form (`ts brokerage accounts --output json`), we hoist
+# any recognised global option from anywhere in argv to the front in main().
+_GLOBAL_VALUE_OPTS = frozenset({"--env", "--profile", "--output", "-o", "--timeout", "--retries"})
+_GLOBAL_FLAGS = frozenset(
+    {
+        "--version",
+        "--sim",
+        "--no-color",
+        "--quiet",
+        "-q",
+        "--verbose",
+        "-v",
+        "-vv",
+        "--unsafe-log-secrets",
+        "--yes",
+        "-y",
+    }
+)
+
+
+def _hoist_global_options(argv: list[str]) -> list[str]:
+    """Move recognised global options/flags to the front of *argv*.
+
+    Lets global flags be passed after the subcommand. Command-specific options
+    (``--max``, ``-f``, ``--account``, …) are untouched and keep their order.
+    A bare ``--`` terminates scanning (everything after is passed through).
+    """
+    head: list[str] = []
+    rest: list[str] = []
+    i = 0
+    while i < len(argv):
+        tok = argv[i]
+        if tok == "--":
+            rest.extend(argv[i:])
+            break
+        key = tok.split("=", 1)[0]
+        if key in _GLOBAL_VALUE_OPTS:
+            head.append(tok)
+            if "=" not in tok and i + 1 < len(argv):
+                head.append(argv[i + 1])
+                i += 1
+        elif key in _GLOBAL_FLAGS:
+            head.append(tok)
+        else:
+            rest.append(tok)
+        i += 1
+    return head + rest
+
+
 def main() -> None:
     """Entry point for the ``ts`` console script."""
-    app()
+    import sys
+
+    app(args=_hoist_global_options(sys.argv[1:]))
