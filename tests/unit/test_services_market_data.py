@@ -294,3 +294,82 @@ class TestGetQuotesErrors:
 
         assert len(quotes) == 1
         assert quotes[0].symbol == "AAPL"
+
+
+# ---------------------------------------------------------------------------
+# B1 — get_bars
+# ---------------------------------------------------------------------------
+
+_CANNED_BARS = {
+    "Bars": [
+        {
+            "Open": "177.10", "High": "178.20", "Low": "176.90", "Close": "178.05",
+            "TimeStamp": "2026-06-01T13:30:00Z", "TotalVolume": "1200000",
+            "TotalTrades": "8500", "IsRealtime": False, "IsEndOfHistory": False,
+        },
+        {
+            "Open": "178.05", "High": "179.02", "Low": "177.80", "Close": "178.45",
+            "TimeStamp": "2026-06-01T13:31:00Z", "TotalVolume": "980000",
+            "TotalTrades": "7200", "IsRealtime": False, "IsEndOfHistory": True,
+        },
+    ]
+}
+
+
+class TestGetBars:
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_bars_basic(self) -> None:
+        route = respx.get(f"{_BASE}/marketdata/barcharts/AAPL").mock(
+            return_value=httpx.Response(200, json=_CANNED_BARS)
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            bars = await svc.get_bars("AAPL", barsback=2)
+
+        assert route.called
+        params = route.calls.last.request.url.params
+        assert params["interval"] == "1"
+        assert params["unit"] == "Minute"
+        assert params["barsback"] == "2"
+        assert params["sessiontemplate"] == "Default"
+        assert len(bars) == 2
+        assert bars[0].open == pytest.approx(177.10)
+        assert bars[0].close == pytest.approx(178.05)
+        assert bars[0].total_volume == 1200000
+        assert bars[1].is_end_of_history is True
+        assert bars[0].datetime_utc is not None
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_bars_daily_with_dates(self) -> None:
+        route = respx.get(f"{_BASE}/marketdata/barcharts/ESM26").mock(
+            return_value=httpx.Response(200, json={"Bars": []})
+        )
+        from tradestation.enums import BarUnit, MarketSession
+
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            await svc.get_bars(
+                "ESM26",
+                interval=1,
+                unit=BarUnit.DAILY,
+                firstdate="2026-05-01",
+                lastdate="2026-05-31",
+                session_template=MarketSession.EXTENDED_HOURS,
+            )
+        params = route.calls.last.request.url.params
+        assert params["unit"] == "Daily"
+        assert params["firstdate"] == "2026-05-01"
+        assert params["lastdate"] == "2026-05-31"
+        assert params["sessiontemplate"] == "USEQPreAndPost"
+
+    @pytest.mark.asyncio
+    @respx.mock
+    async def test_bars_empty(self) -> None:
+        respx.get(f"{_BASE}/marketdata/barcharts/BTCUSD").mock(
+            return_value=httpx.Response(200, json={"Bars": []})
+        )
+        async with httpx.AsyncClient() as http:
+            svc = MarketDataService(_make_transport(http))
+            assert await svc.get_bars("BTCUSD") == []

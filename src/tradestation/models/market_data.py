@@ -179,6 +179,58 @@ def _coerce_quote_strings(data: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+class Bar(BaseModel):
+    """A single OHLC bar (B1 barcharts).
+
+    v3 reality: the barcharts response is ``{"Bars": [...]}``; numeric fields
+    arrive as strings; ``TimeStamp`` is ISO-8601 UTC. Unknown fields allowed.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    open: float | None = Field(None, alias="Open")
+    high: float | None = Field(None, alias="High")
+    low: float | None = Field(None, alias="Low")
+    close: float | None = Field(None, alias="Close")
+    timestamp: str | None = Field(None, alias="TimeStamp")
+    total_volume: int | None = Field(None, alias="TotalVolume")
+    total_trades: int | None = Field(None, alias="TotalTrades")
+    open_interest: int | None = Field(None, alias="OpenInterest")
+    up_volume: int | None = Field(None, alias="UpVolume")
+    down_volume: int | None = Field(None, alias="DownVolume")
+    high_low_price: float | None = Field(None, alias="HighLowPriceMidpoint")
+    is_realtime: bool | None = Field(None, alias="IsRealtime")
+    is_end_of_history: bool | None = Field(None, alias="IsEndOfHistory")
+    bar_status: str | None = Field(None, alias="BarStatus")
+
+    @property
+    def datetime_utc(self) -> datetime | None:
+        """Parse ``TimeStamp`` as a UTC datetime, or return None."""
+        if not self.timestamp:
+            return None
+        try:
+            return datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
+        except (ValueError, AttributeError):
+            return None
+
+
+def parse_bars_response(raw: Any) -> list[Bar]:
+    """Parse the raw v3 barcharts response ``{"Bars": [...]}`` into models.
+
+    Numeric strings are coerced by Pydantic's lax mode. Unknown fields are
+    preserved. A bare list is also tolerated.
+    """
+    if isinstance(raw, dict):
+        bars = raw.get("Bars", [])
+    elif isinstance(raw, list):
+        bars = raw
+    else:
+        bars = []
+    if not isinstance(bars, list):
+        return []
+    return [Bar.model_validate(b) for b in bars if isinstance(b, dict)]
+
+
 def parse_quotes_response(raw: dict[str, Any]) -> list[Quote]:
     """Parse the raw v3 quote response into a list of :class:`Quote` models.
 

@@ -13,7 +13,12 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from tradestation.enums import BarUnit, MarketSession
-from tradestation.models.market_data import Quote, parse_quotes_response
+from tradestation.models.market_data import (
+    Bar,
+    Quote,
+    parse_bars_response,
+    parse_quotes_response,
+)
 from tradestation.services.base import BaseService
 from tradestation.streaming import StreamEvent
 
@@ -38,13 +43,13 @@ class MarketDataService(BaseService):
         firstdate: str | None = None,
         lastdate: str | None = None,
         session_template: MarketSession = MarketSession.DEFAULT,
-    ) -> Any:
+    ) -> list[Bar]:
         """Fetch historical bar chart data.
 
-        Maps to: B1 GET /marketdata/barcharts/{symbol}
+        Maps to: B1 GET /v3/marketdata/barcharts/{symbol}
 
         Args:
-            symbol: Instrument symbol (e.g. ``"AAPL"``).
+            symbol: Instrument symbol (e.g. ``"AAPL"``, ``"ESM26"``, ``"BTCUSD"``).
             interval: Bar size; meaning depends on *unit*.
             unit: Bar unit (Minute, Daily, Weekly, Monthly, Tick, Volume).
             barsback: Number of bars to return counting back from *lastdate*.
@@ -53,12 +58,28 @@ class MarketDataService(BaseService):
             session_template: Which session(s) to include.
 
         Returns:
-            Parsed bar-chart response (model TBD — Phase 2).
+            A list of :class:`~tradestation.models.market_data.Bar` models in
+            chronological order.
 
         Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            tradestation.errors.ApiError: On 4xx / 5xx from the API.
+            tradestation.errors.NetworkError: On transport failure.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B1")
+        params: dict[str, Any] = {
+            "interval": interval,
+            "unit": unit.value,
+            "sessiontemplate": session_template.value,
+        }
+        if barsback is not None:
+            params["barsback"] = barsback
+        if firstdate is not None:
+            params["firstdate"] = firstdate
+        if lastdate is not None:
+            params["lastdate"] = lastdate
+        raw = await self._transport.request(
+            "GET", f"/marketdata/barcharts/{symbol}", params=params
+        )
+        return parse_bars_response(raw)
 
     async def get_quotes(self, symbols: list[str] | str) -> list[Quote]:
         """Fetch quote snapshots for one or more symbols.

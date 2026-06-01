@@ -13,20 +13,26 @@ from tradestation.models.brokerage import (
     Position,
     Wallet,
 )
-from tradestation.models.market_data import MarketFlags, Quote, parse_quotes_response
+from tradestation.models.market_data import (
+    Bar,
+    MarketFlags,
+    Quote,
+    parse_bars_response,
+    parse_quotes_response,
+)
 
 __all__ = [
-    # brokerage
     "Account",
     "Balances",
+    "Bar",
     "BeginningOfDayBalances",
     "HistoricalOrder",
-    # market data
     "MarketFlags",
     "Order",
     "OrderLeg",
     "Position",
     "Quote",
     "Wallet",
+    "parse_bars_response",
     "parse_quotes_response",
 ]
