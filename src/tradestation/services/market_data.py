@@ -13,6 +13,7 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from tradestation.enums import BarUnit, MarketSession
+from tradestation.models.market_data import Quote, parse_quotes_response
 from tradestation.services.base import BaseService
 from tradestation.streaming import StreamEvent
 
@@ -59,22 +60,32 @@ class MarketDataService(BaseService):
         """
         raise NotImplementedError("see docs/05-python-library.md §'Service surface' B1")
 
-    async def get_quotes(self, symbols: list[str]) -> Any:
+    async def get_quotes(self, symbols: list[str] | str) -> list[Quote]:
         """Fetch quote snapshots for one or more symbols.
 
-        Maps to: B2 GET /marketdata/quotes/{symbols}
+        Maps to: B2 GET /v3/marketdata/quotes/{symbols}
 
         Args:
-            symbols: List of instrument symbols (joined as comma-separated
-                path segment).
+            symbols: List of instrument symbols (or a single comma-separated
+                string).  Joined as a comma-separated path segment.
 
         Returns:
-            Parsed quote response (model TBD — Phase 2).
+            A list of :class:`~tradestation.models.market_data.Quote` models,
+            one per valid symbol.  Symbols with errors are omitted.
 
         Raises:
-            NotImplementedError: Until Phase 2 implementation.
+            tradestation.errors.ApiError: On 4xx / 5xx from the API.
+            tradestation.errors.NetworkError: On transport failure.
         """
-        raise NotImplementedError("see docs/05-python-library.md §'Service surface' B2")
+        if isinstance(symbols, str):
+            # Accept "AAPL,MSFT" as well as ["AAPL", "MSFT"]
+            syms = [s.strip() for s in symbols.split(",") if s.strip()]
+        else:
+            syms = list(symbols)
+
+        path = "/marketdata/quotes/" + ",".join(syms)
+        raw = await self._transport.request("GET", path)
+        return parse_quotes_response(raw)
 
     async def get_symbols(self, symbols: list[str]) -> Any:
         """Fetch symbol metadata for one or more symbols.

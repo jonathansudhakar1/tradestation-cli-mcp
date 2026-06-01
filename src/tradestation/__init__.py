@@ -53,6 +53,7 @@ from tradestation.errors import (
     TradeStationError,
     ValidationError,
 )
+from tradestation.models.market_data import Quote
 from tradestation.streaming import StreamEvent
 
 __all__ = [
@@ -71,6 +72,7 @@ __all__ = [
     "OrderRejectedError",
     "OrderStatus",
     "OrderType",
+    "Quote",
     "RateLimitError",
     "RefreshTokenExpired",
     "ServerError",
