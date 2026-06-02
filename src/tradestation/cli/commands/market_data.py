@@ -1,10 +1,13 @@
 """``ts md`` command group — market data.
 
 Subcommands:
-    quotes   — snapshot quotes for one or more symbols (B2)
-    bars     — historical bar chart data (B1) [stub]
-    symbols  — symbol metadata (B3) [stub]
-    ...
+    quotes          — snapshot quotes for one or more symbols (B2)
+    bars            — historical bar chart data (B1)
+    symbols         — symbol metadata (B3)
+    crypto pairs    — supported crypto pairs (B7)
+    options chain   — full option chain snapshot for an expiration (B16)
+    options expirations / spread-types (B8 / B10)
+    stream …        — live streaming: quotes, bars, depth, option chain (B12-B17)
 
 See docs/03-endpoint-inventory.md §"B. MarketData".
 See docs/04-cli-design.md §"Section B — MarketData".
@@ -395,6 +398,268 @@ def opt_spread_types_cmd(ctx: typer.Context) -> None:
     else:
         for t in types:
             sys.stdout.write(json.dumps(t.model_dump(by_alias=False), default=str) + "\n")
+
+
+# ---------------------------------------------------------------------------
+# B16 (snapshot) — `ts md options chain`
+# ---------------------------------------------------------------------------
+
+# Column registry for the chain view: key -> (header, raw frame field).
+_CHAIN_COLUMNS: dict[str, tuple[str, str]] = {
+    "bid": ("Bid", "Bid"),
+    "ask": ("Ask", "Ask"),
+    "mid": ("Mid", "Mid"),
+    "last": ("Last", "Last"),
+    "volume": ("Vol", "Volume"),
+    "oi": ("OI", "DailyOpenInterest"),
+    "iv": ("IV", "ImpliedVolatility"),
+    "delta": ("Δ", "Delta"),
+    "gamma": ("Γ", "Gamma"),
+    "theta": ("Θ", "Theta"),
+    "vega": ("Vega", "Vega"),
+}
+_DEFAULT_CHAIN_COLUMNS = ["bid", "ask", "last", "volume", "oi", "iv", "delta"]
+
+
+def _fmt_chain_cell(key: str, frame: dict[str, Any] | None) -> str:
+    """Format one chain cell for column *key* from a per-strike frame."""
+    if not frame:
+        return ""
+    raw = frame.get(_CHAIN_COLUMNS[key][1])
+    if raw is None or raw == "":
+        return ""
+    try:
+        x = float(raw)
+    except (TypeError, ValueError):
+        return str(raw)
+    if key in ("volume", "oi"):
+        return f"{int(x):,}"
+    if key == "iv":
+        return f"{x * 100:.1f}%" if abs(x) <= 1 else f"{x:.1f}%"
+    if key in ("delta", "gamma", "theta", "vega"):
+        return f"{x:.3f}"
+    return f"{x:,.2f}"
+
+
+def _resolve_expiration(exps: Sequence[Any], *, date: str | None, dte: int | None) -> str | None:
+    """Pick an expiration date string: explicit --date, nearest --dte, or soonest."""
+    dates = [str(e.date)[:10] for e in exps if getattr(e, "date", None)]
+    if not dates:
+        return None
+    if date:
+        target = date[:10]
+        return (
+            target
+            if target in dates
+            else min(dates, key=lambda d: abs(_days_out(d) - _days_out(target)))
+        )
+    if dte is not None:
+        return min(dates, key=lambda d: abs(_days_out(d) - dte))
+    # Soonest upcoming expiration (smallest non-negative DTE), else earliest.
+    upcoming = [d for d in dates if _days_out(d) >= 0]
+    return min(upcoming or dates, key=_days_out)
+
+
+def _days_out(iso_date: str) -> int:
+    """Whole days from today (UTC) to *iso_date* (YYYY-MM-DD). Large if unparsable."""
+    try:
+        d = datetime.strptime(iso_date[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return 10**6
+    return (d.date() - datetime.now(timezone.utc).date()).days
+
+
+def _assemble_chain(frames: Sequence[dict[str, Any]]) -> dict[float, dict[str, dict[str, Any]]]:
+    """Group chain frames into ``{strike: {"Call": frame, "Put": frame}}``."""
+    rows: dict[float, dict[str, dict[str, Any]]] = {}
+    for f in frames:
+        legs = f.get("Legs") or []
+        leg = legs[0] if legs else {}
+        otype = str(leg.get("OptionType") or f.get("Side") or "").strip().upper()
+        side = "Call" if otype.startswith("C") else "Put" if otype.startswith("P") else None
+        strike_raw = leg.get("StrikePrice") or (f.get("Strikes") or [None])[0]
+        try:
+            strike = float(strike_raw)
+        except (TypeError, ValueError):
+            continue
+        if side is None:
+            continue
+        rows.setdefault(strike, {})[side] = f
+    return rows
+
+
+def _select_strikes(strikes: Sequence[float], *, count: int, atm: float | None) -> list[float]:
+    """Return up to *count* strikes, centered on the strike nearest *atm*."""
+    ordered = sorted(strikes)
+    if count <= 0 or len(ordered) <= count:
+        return ordered
+    if atm is None:
+        return ordered[:count]
+    center = min(range(len(ordered)), key=lambda i: abs(ordered[i] - atm))
+    lo = max(0, center - count // 2)
+    hi = min(len(ordered), lo + count)
+    lo = max(0, hi - count)
+    return ordered[lo:hi]
+
+
+@options_app.command(name="chain")
+def opt_chain_cmd(
+    ctx: typer.Context,
+    underlying: Annotated[str, typer.Argument(help="Underlying symbol (e.g. AAPL).")],
+    date: Annotated[
+        str | None,
+        typer.Option("--date", help="Expiration date (YYYY-MM-DD). Default: nearest."),
+    ] = None,
+    dte: Annotated[
+        int | None,
+        typer.Option("--dte", help="Target days-to-expiration; picks the nearest expiration."),
+    ] = None,
+    strikes: Annotated[
+        int,
+        typer.Option("--strikes", "-n", help="Number of strikes to show, centered on ATM."),
+    ] = 20,
+    columns: Annotated[
+        str | None,
+        typer.Option(
+            "--columns",
+            help=(
+                "Comma-separated columns per side. Choices: "
+                + ",".join(_CHAIN_COLUMNS)
+                + f". Default: {','.join(_DEFAULT_CHAIN_COLUMNS)}."
+            ),
+        ),
+    ] = None,
+    timeout: Annotated[
+        float,
+        typer.Option("--timeout", help="Max seconds to collect the chain snapshot."),
+    ] = 10.0,
+) -> None:
+    """Show a full option chain (calls │ strike │ puts) for one expiration.
+
+    Maps to: B16 — ``GET /v3/marketdata/stream/options/chains/{underlying}``
+    (collected into a one-shot snapshot). Picks the nearest expiration by
+    default; use ``--date`` for a specific date or ``--dte`` for a target DTE.
+
+    Examples::
+
+        ts md options chain AAPL
+        ts md options chain AAPL --dte 30 --strikes 16
+        ts md options chain SPY --date 2026-06-19 --columns bid,ask,iv,delta
+    """
+    cli = CLIContext.from_typer(ctx)
+
+    # 1. Resolve which expiration to show.
+    exps = _run_md(cli, cli.client.market_data.get_option_expirations(underlying))
+    expiration = _resolve_expiration(exps, date=date, dte=dte)
+    if not expiration:
+        cli.console.print(f"[ts.bad]✖[/ts.bad] No option expirations found for {underlying}.")
+        raise typer.Exit(code=5)
+
+    # 2. ATM reference (best-effort) to center the strike window.
+    atm: float | None = None
+    try:
+        uq = asyncio.run(cli.client.market_data.get_quotes([underlying]))
+        if uq and uq[0].last:
+            atm = float(uq[0].last)
+    except Exception:
+        atm = None
+
+    # 3. Collect the chain snapshot (bounded by EndSnapshot or --timeout).
+    async def _gather(frames: list[dict[str, Any]]) -> None:
+        import contextlib
+
+        agen: Any = cli.client.market_data.stream_option_chain(underlying, expiration)
+        async with contextlib.aclosing(agen) as stream:
+            async for ev in stream:
+                data = ev.raw or {}
+                if data.get("StreamStatus") == "EndSnapshot":
+                    return
+                if data.get("Legs") or data.get("Strikes"):
+                    frames.append(data)
+                    if len(frames) >= 5000:  # safety cap
+                        return
+
+    async def _collect() -> list[dict[str, Any]]:
+        import contextlib
+
+        frames: list[dict[str, Any]] = []
+        with contextlib.suppress(asyncio.TimeoutError, TimeoutError):
+            await asyncio.wait_for(_gather(frames), timeout)
+        return frames
+
+    frames = _run_md(cli, _collect())
+    rows = _assemble_chain(frames)
+    if not rows:
+        cli.console.print(
+            f"[ts.warn]⚠[/ts.warn] No chain data for {underlying} {expiration} "
+            f"(market may be closed, or try a longer --timeout)."
+        )
+        raise typer.Exit(code=0)
+
+    selected = _select_strikes(list(rows), count=strikes, atm=atm)
+
+    # 4. Resolve the column set.
+    if columns:
+        cols = [
+            c.strip().lower() for c in columns.split(",") if c.strip().lower() in _CHAIN_COLUMNS
+        ]
+        if not cols:
+            cli.console.print(
+                f"[ts.bad]✖[/ts.bad] No valid columns in {columns!r}. "
+                f"Choices: {', '.join(_CHAIN_COLUMNS)}."
+            )
+            raise typer.Exit(code=2)
+    else:
+        cols = list(_DEFAULT_CHAIN_COLUMNS)
+
+    if cli.output_mode != OutputMode.TABLE:
+        for strike in selected:
+            sys.stdout.write(
+                json.dumps(
+                    {
+                        "Strike": strike,
+                        "Call": rows[strike].get("Call"),
+                        "Put": rows[strike].get("Put"),
+                    },
+                    default=str,
+                )
+                + "\n"
+            )
+        return
+
+    from rich import box
+    from rich.table import Table
+
+    dte_days = _days_out(expiration)
+    now = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    cli.console.print(
+        render_banner(
+            f"Chain {underlying}",
+            f"exp {expiration} ({dte_days}d)  ·  {len(selected)} strikes"
+            + (f"  ·  ATM ~{atm:,.2f}" if atm else ""),
+            cli.environment.value,
+            now,
+        )
+    )
+    tbl = Table(box=box.ROUNDED, header_style="ts.header", title="◀ CALLS          PUTS ▶")
+    for key in cols:  # call side
+        tbl.add_column(_CHAIN_COLUMNS[key][0], justify="right", style="ts.up")
+    tbl.add_column("Strike", justify="center", style="ts.symbol")
+    for key in cols:  # put side
+        tbl.add_column(_CHAIN_COLUMNS[key][0], justify="right", style="ts.down")
+
+    atm_strike = min(selected, key=lambda s: abs(s - atm)) if atm else None
+    for strike in selected:
+        call = rows[strike].get("Call")
+        put = rows[strike].get("Put")
+        strike_label = f"{strike:,.2f}"
+        if strike == atm_strike:
+            strike_label = f"[reverse]{strike_label}[/reverse]"
+        cells = [_fmt_chain_cell(k, call) for k in cols]
+        cells.append(strike_label)
+        cells.extend(_fmt_chain_cell(k, put) for k in cols)
+        tbl.add_row(*cells)
+    cli.console.print(tbl)
 
 
 # ---------------------------------------------------------------------------

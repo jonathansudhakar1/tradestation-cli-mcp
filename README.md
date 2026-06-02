@@ -61,6 +61,7 @@ ts auth status
 ts md quotes AAPL MSFT BTCUSD          # equities + crypto
 ts md bars AAPL --barsback 100
 ts md options expirations AAPL
+ts md options chain AAPL --dte 30 --strikes 16   # calls │ strike │ puts, ATM-centered
 ts md crypto pairs
 
 # Account data

@@ -230,6 +230,25 @@ ts md options strikes AAPL --expiration 2026-06-20
 ts md options strikes AAPL --expiration 2026-06-20 --spread-type Vertical
 ```
 
+### `ts md options chain`  →  (B16 snapshot)
+
+Full chain for one expiration, rendered as a classic `◀ CALLS │ Strike │ PUTS ▶`
+table (collected from the streaming endpoint into a one-shot snapshot; the
+ATM strike is highlighted).
+
+```
+ts md options chain AAPL                         # nearest expiration
+ts md options chain AAPL --dte 30                # nearest to 30 days out
+ts md options chain AAPL --date 2026-06-19       # specific expiration
+ts md options chain AAPL --strikes 16            # 16 strikes centered on ATM
+ts md options chain SPY --columns bid,ask,iv,delta   # choose columns per side
+```
+
+- `--strikes N` / `-n N`: number of strikes to show, centered on the money (default 20).
+- `--columns`: comma-separated, applied to each side. Choices: `bid, ask, mid, last, volume, oi, iv, delta, gamma, theta, vega` (default `bid,ask,last,volume,oi,iv,delta`).
+- `--dte N` picks the expiration nearest N days out; `--date` selects an exact date; default is the soonest upcoming expiration.
+- `--timeout` bounds how long the snapshot collection runs (default 10s).
+
 ### `ts md options spread-types`  →  (B10)
 
 ```
