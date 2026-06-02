@@ -37,6 +37,17 @@ def _fake_token_exchange_failure(*args: object, **kwargs: object) -> MagicMock:
     return resp
 
 
+def _read_payload(path: Path) -> dict:
+    """Decrypt an on-disk credentials envelope and return the payload dict.
+
+    Works for both ``fernet-v1`` (the default) and ``plaintext`` envelopes.
+    Relies on the autouse ``isolated_keyring`` fixture for the Fernet key.
+    """
+    from tradestation.credentials import _decrypt_envelope
+
+    return _decrypt_envelope(json.loads(path.read_text()))
+
+
 # ---------------------------------------------------------------------------
 # Non-interactive (flag-driven) form
 # ---------------------------------------------------------------------------
@@ -72,8 +83,9 @@ class TestAuthSetNonInteractive:
         assert creds_path.exists()
 
         data = json.loads(creds_path.read_text())
-        assert data["scheme"] == "plaintext"
-        payload = data["payload"]
+        assert data["scheme"] == "fernet-v1", "credentials must be encrypted by default"
+        assert "ciphertext_b64" in data
+        payload = _read_payload(creds_path)
         assert payload["client_id"] == "TESTCLIENTID"
         assert payload["client_secret"] == "TESTSECRET"
         assert payload["refresh_token"] == "TESTREFRESHTOKEN"
@@ -181,6 +193,34 @@ class TestAuthSetNonInteractive:
         )
         assert result.exit_code == 1
 
+    def test_set_no_encrypt_with_risk_writes_plaintext(
+        self,
+        cli_runner: typer.testing.CliRunner,
+        tmp_tscli_dir: Path,
+    ) -> None:
+        """--no-encrypt --i-understand-the-risk opts out into plaintext."""
+        creds_path = tmp_tscli_dir / "credentials"
+        with patch("httpx.post", side_effect=_fake_token_exchange_success):
+            result = cli_runner.invoke(
+                app,
+                [
+                    "auth",
+                    "set",
+                    "--client-id",
+                    "ID",
+                    "--client-secret",
+                    "SECRET",
+                    "--refresh-token",
+                    "TOKEN",
+                    "--no-encrypt",
+                    "--i-understand-the-risk",
+                ],
+            )
+        assert result.exit_code == 0, result.output
+        data = json.loads(creds_path.read_text())
+        assert data["scheme"] == "plaintext"
+        assert data["payload"]["client_id"] == "ID"
+
     def test_set_stores_access_token(
         self,
         cli_runner: typer.testing.CliRunner,
@@ -205,7 +245,7 @@ class TestAuthSetNonInteractive:
             )
 
         assert result.exit_code == 0
-        payload = json.loads(creds_path.read_text())["payload"]
+        payload = _read_payload(creds_path)
         assert payload["access_token"] == "FAKEACCESSTOKEN"
         assert payload["access_token_expires_at"] is not None
 
@@ -254,7 +294,7 @@ class TestAuthSetInteractive:
 
         assert result.exit_code == 0, result.output
         assert creds_path.exists()
-        payload = json.loads(creds_path.read_text())["payload"]
+        payload = _read_payload(creds_path)
         assert payload["client_id"] == "INTERACTIVEID"
 
     def test_set_interactive_masked_prompts_not_echoed(

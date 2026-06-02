@@ -13,15 +13,37 @@ from __future__ import annotations
 
 import json
 import stat
+from collections.abc import Generator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from typer.testing import CliRunner
 
 from tradestation.enums import Environment
+
+# ---------------------------------------------------------------------------
+# Keyring isolation (autouse)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def isolated_keyring() -> Generator[MagicMock, None, None]:
+    """Replace the OS keyring with an in-memory mock for every CLI test.
+
+    ``ts auth set`` now encrypts by default, so without this the tests would
+    read and write the developer's real OS keyring. The in-memory store keeps
+    encrypt → decrypt round-trips deterministic and side-effect-free.
+    """
+    store: dict[tuple[str, str], str] = {}
+    mock = MagicMock()
+    mock.get_password.side_effect = lambda service, user: store.get((service, user))
+    mock.set_password.side_effect = lambda service, user, pw: store.__setitem__((service, user), pw)
+    with patch("tradestation.credentials.keyring", mock):
+        yield mock
+
 
 # ---------------------------------------------------------------------------
 # CliRunner

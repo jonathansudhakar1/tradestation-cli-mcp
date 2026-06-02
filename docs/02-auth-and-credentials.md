@@ -102,7 +102,7 @@ Decrypted payload (never on disk in plaintext unless `--no-encrypt`):
 Two-tier strategy, picked at `set` time and recorded in `state.json`:
 
 1. **`keyring`** (preferred). The Fernet key is stored in the OS keyring (macOS Keychain, GNOME `libsecret`, Windows Credential Locker) under service `tscli`, account `credentials-key-v1`. The on-disk file holds *only* the ciphertext + KDF metadata; the key never touches the disk.
-2. **`passphrase`** (fallback when keyring is unavailable, e.g. headless Linux without `libsecret`). On first save the user enters a passphrase; PBKDF2 derives the Fernet key (salt stored in the file). Every subsequent read prompts for the passphrase — or the user can export `TSCLI_PASSPHRASE` in the env.
+2. **`passphrase`** (fallback when keyring is unavailable, e.g. headless Linux without `libsecret`). The passphrase is read from the `TSCLI_PASSPHRASE` environment variable; PBKDF2 derives the Fernet key (salt stored in the file), and the same variable is required to decrypt on later reads. If neither a keyring backend nor `TSCLI_PASSPHRASE` is available, `ts auth set` fails with a clear error rather than silently writing plaintext — pass `--no-encrypt --i-understand-the-risk` to deliberately store plaintext.
 
 Both modes round-trip the **same** on-disk format. The mode is recorded so the loader knows which path to take.
 

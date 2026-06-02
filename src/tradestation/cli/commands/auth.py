@@ -15,7 +15,6 @@ Maps to: A — credential management (no specific endpoint ID; auth lifecycle).
 
 from __future__ import annotations
 
-import os
 import stat
 from pathlib import Path
 from typing import Annotated
@@ -24,6 +23,7 @@ import typer
 from rich.console import Console
 from rich.tree import Tree
 
+from tradestation import credentials as credential_store
 from tradestation.cli.prompts import (
     confirm_destructive,
     prompt_secret,
@@ -33,6 +33,7 @@ from tradestation.cli.render import panel_auth_status
 from tradestation.cli.theme import get_theme
 from tradestation.credentials import Credentials, default_credentials_path
 from tradestation.enums import Environment
+from tradestation.errors import AuthError
 
 app = typer.Typer(
     name="auth",
@@ -41,7 +42,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-_DEFAULT_SCOPE = "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access"
+_DEFAULT_SCOPE = (
+    "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access"
+)
 
 
 def _console() -> Console:
@@ -196,15 +199,18 @@ def auth_set(
         access_token_expires_at=expires_at,
     )
 
-    # --- write to disk ---
+    # --- write to disk (encrypted unless --no-encrypt was passed) ---
     creds_path = _credentials_path(profile)
     try:
-        _write_credentials_plaintext(credentials, creds_path)
-    except OSError as exc:
+        credential_store.save(credentials, creds_path, encrypt=encrypt, use_keyring=encrypt)
+    except (OSError, AuthError) as exc:
         console.print(f"\n[ts.bad]✖[/ts.bad] Failed to write credentials: {exc}")
         raise typer.Exit(code=1) from None
 
-    console.print(f"[ts.ok]✔[/ts.ok] Saved → [ts.mono]{creds_path}[/ts.mono]  (perms 0600)")
+    scheme_label = "encrypted (fernet-v1)" if encrypt else "[ts.warn]plaintext[/ts.warn]"
+    console.print(
+        f"[ts.ok]✔[/ts.ok] Saved → [ts.mono]{creds_path}[/ts.mono]  (perms 0600, {scheme_label})"
+    )
     # Write state.json
     _write_state(creds_path.parent, environment)
 
@@ -265,51 +271,6 @@ def _credentials_path(profile: str | None) -> Path:
     return default_credentials_path()
 
 
-def _write_credentials_plaintext(credentials: Credentials, path: Path) -> None:
-    """Write credentials as plaintext JSON (scheme: plaintext).
-
-    Creates parent dirs with 0700, writes file with 0600.
-    Uses atomic tempfile + rename.
-    """
-    import json
-    import tempfile
-
-    payload = {
-        "version": 1,
-        "scheme": "plaintext",
-        "payload": {
-            "client_id": credentials.client_id,
-            "client_secret": credentials.client_secret,
-            "refresh_token": credentials.refresh_token,
-            "scope": credentials.scope,
-            "environment": credentials.environment.value,
-            "access_token": credentials.access_token,
-            "access_token_expires_at": credentials.access_token_expires_at,
-            "id_token": credentials.id_token,
-        },
-    }
-    # Create parent directory
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-
-    # Atomic write
-    fd, tmp_path_str = tempfile.mkstemp(dir=path.parent, prefix=".credentials_tmp_")
-    tmp_path = Path(tmp_path_str)
-    try:
-        os.write(fd, json.dumps(payload, indent=2).encode())
-        os.fsync(fd)
-        os.close(fd)
-        # Set 0600 before rename
-        tmp_path.chmod(stat.S_IRUSR | stat.S_IWUSR)
-        tmp_path.rename(path)
-    except Exception:
-        os.close(fd)
-        tmp_path.unlink(missing_ok=True)
-        raise
-
-    # Ensure parent dir has correct mode
-    path.parent.chmod(0o700)
-
-
 def _write_state(tscli_dir: Path, environment: Environment) -> None:
     """Write state.json with the current environment (non-secret)."""
     import json
@@ -351,7 +312,7 @@ def auth_status(
         raise typer.Exit(code=3) from None
 
     try:
-        creds_data = _load_credentials_plaintext(creds_path)
+        creds_data, scheme = _load_credential_payload(creds_path)
     except Exception as exc:
         console.print(f"[ts.bad]✖[/ts.bad] Failed to read credentials: {exc}")
         raise typer.Exit(code=3) from None
@@ -383,10 +344,6 @@ def auth_status(
     else:
         token_status = "none"
 
-    # Determine scheme
-    scheme_raw = creds_data.get("scheme", "plaintext")
-    scheme = str(scheme_raw)
-
     env_raw = creds_data.get("environment", "sim")
     environment = str(env_raw)
     client_id = str(creds_data.get("client_id", ""))
@@ -411,21 +368,24 @@ def auth_status(
         raise typer.Exit(code=3) from None
 
 
-def _load_credentials_plaintext(path: Path) -> dict[str, object]:
-    """Load the raw plaintext credential payload from *path*.
+def _load_credential_payload(path: Path) -> tuple[dict[str, object], str]:
+    """Read *path*, decrypting if necessary, and return ``(payload, scheme)``.
 
-    Supports both ``scheme: plaintext`` (payload key) and a direct payload.
-    Returns the inner payload dict.
+    Handles both plaintext and ``fernet-v1`` envelopes via the library's
+    decryption. Raises :class:`~tradestation.errors.AuthError` when an
+    encrypted file cannot be decrypted (missing keyring key / passphrase).
     """
     import json
 
     raw = json.loads(path.read_text())
-    scheme = raw.get("scheme", "plaintext")
-    if scheme == "plaintext":
-        payload = raw.get("payload", raw)
-        return dict(payload) if isinstance(payload, dict) else {}
-    # For other schemes, return the top-level dict (Phase 2 will handle decryption)
-    return dict(raw)
+    if not isinstance(raw, dict):
+        raise AuthError("Corrupt credentials file: expected a JSON object")
+    scheme = str(raw.get("scheme", "plaintext"))
+    # Tolerate a bare payload written without an envelope wrapper.
+    if scheme == "plaintext" and "payload" not in raw:
+        return dict(raw), "plaintext"
+    payload = credential_store._decrypt_envelope(raw)
+    return dict(payload), scheme
 
 
 # ---------------------------------------------------------------------------
@@ -456,7 +416,7 @@ def auth_refresh(
         raise typer.Exit(code=3) from None
 
     try:
-        payload = _load_credentials_plaintext(creds_path)
+        payload, prior_scheme = _load_credential_payload(creds_path)
     except Exception as exc:
         console.print(f"[ts.bad]✖[/ts.bad] Failed to read credentials: {exc}")
         raise typer.Exit(code=3) from None
@@ -502,8 +462,8 @@ def auth_refresh(
             access_token_expires_at=expires_at,
         )
         try:
-            _write_credentials_plaintext(credentials, creds_path)
-        except OSError as exc:
+            credential_store.save(credentials, creds_path, encrypt=(prior_scheme != "plaintext"))
+        except (OSError, AuthError) as exc:
             console.print(f"\n[ts.bad]✖[/ts.bad] Failed to write credentials: {exc}")
             raise typer.Exit(code=1) from None
 
@@ -635,7 +595,7 @@ def auth_export(
         raise typer.Exit(code=3) from None
 
     try:
-        payload = _load_credentials_plaintext(creds_path)
+        payload, _ = _load_credential_payload(creds_path)
     except Exception as exc:
         console.print(f"[ts.bad]✖[/ts.bad] Failed to read credentials: {exc}")
         raise typer.Exit(code=3) from None
@@ -683,8 +643,7 @@ def auth_doctor(
             f"[{mode_style}]{'✔' if mode_ok else '⚠'}[/{mode_style}]  Permissions: {mode}"
         )
         try:
-            payload = _load_credentials_plaintext(creds_path)
-            scheme = str(payload.get("scheme", "unknown"))
+            payload, scheme = _load_credential_payload(creds_path)
             file_node.add(f"[ts.ok]✔[/ts.ok]  Scheme: [ts.value]{scheme}[/ts.value]")
         except Exception as exc:
             file_node.add(f"[ts.bad]✖[/ts.bad]  Parse error: {exc}")
