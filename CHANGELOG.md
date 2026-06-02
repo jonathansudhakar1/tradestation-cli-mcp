@@ -6,6 +6,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-06-01
+
+### Added
+
+- Wired every documented CLI command that existed in the library but was
+  missing from the CLI — so the documented surface is now actually runnable:
+  - `ts md options strikes` (B9), `ts md options risk-reward` (B11)
+  - `ts md stream depth-quotes` (B14), `depth-agg` (B15), `option-chain` (B16),
+    `option-quotes` (B17)
+  - `ts brokerage stream order <id>` (C11)
+  - `ts order group confirm` / `ts order group place` (D5/D6) — OCO / bracket /
+    OSO groups from a JSON spec (`--file`, `--json`, or stdin)
+- README command-reference table and a test guarding the full command surface.
+
+### Fixed
+
+- CI lint/format failures on the 0.2.0 commit (`_DEFAULT_SCOPE` wrapping and an
+  unused `noqa`) that prevented the release build from going green.
+
 ## [0.2.0] — 2026-06-01
 
 ### Security
