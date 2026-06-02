@@ -6,6 +6,41 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-06-01
+
+### Security
+
+- **`ts auth set` now encrypts credentials at rest by default.** Previously the
+  CLI always wrote the credentials file in plaintext, silently ignoring the
+  `--encrypt` flag (which defaulted to on). Credentials are now Fernet-encrypted
+  via the OS keyring (or `TSCLI_PASSPHRASE`); plaintext requires an explicit
+  `--no-encrypt --i-understand-the-risk`, and setup fails with a clear message
+  when no key source is available rather than writing plaintext. `status`,
+  `refresh`, `export`, and `doctor` decrypt transparently.
+
+### Added
+
+- **`ts md options chain`** — full option chain snapshot for one expiration,
+  rendered as `◀ CALLS │ Strike │ PUTS ▶` with the ATM strike highlighted.
+  Selects the nearest expiration by default, or `--date` / `--dte`; `--strikes`
+  centers N strikes on the money; `--columns` chooses the per-side fields.
+
+### Changed
+
+- Default OAuth scopes broadened to
+  `openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access`
+  so quotes, market depth, crypto, and option-spread data work out of the box.
+- `tomli` is now a declared dependency on Python < 3.11 (was relied on but
+  undeclared).
+
+### Fixed
+
+- `ts brokerage accounts` showed Equity / BuyingPower as `0.00`: those fields
+  come from the C2 balances endpoint, not C1. The accounts view now merges
+  balances and shows real figures (or `—` when unavailable).
+- Stale docstrings that described shipped MarketData/Brokerage/streaming code as
+  unimplemented "Phase 2" scaffolding.
+
 ## [0.1.0] — 2026-06-01
 
 First release. Full coverage of the TradeStation v3 API across a library, a
