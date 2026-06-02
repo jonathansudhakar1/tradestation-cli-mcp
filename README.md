@@ -1,5 +1,11 @@
 # tradestation-cli-mcp
 
+[![CI](https://github.com/jonathansudhakar1/tradestation-cli-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathansudhakar1/tradestation-cli-mcp/actions/workflows/ci.yml)
+[![PyPI version](https://img.shields.io/pypi/v/tradestation-cli-mcp.svg)](https://pypi.org/project/tradestation-cli-mcp/)
+[![Python versions](https://img.shields.io/pypi/pyversions/tradestation-cli-mcp.svg)](https://pypi.org/project/tradestation-cli-mcp/)
+[![Downloads](https://img.shields.io/pypi/dm/tradestation-cli-mcp.svg)](https://pypi.org/project/tradestation-cli-mcp/)
+[![License: MIT](https://img.shields.io/pypi/l/tradestation-cli-mcp.svg)](LICENSE)
+
 A single Python package that provides three things on top of the [TradeStation v3 REST API](https://api.tradestation.com/docs/):
 
 | Use it as… | What it gives you | How to invoke |
@@ -13,6 +19,15 @@ A single Python package that provides three things on top of the [TradeStation v
 ```bash
 pip install tradestation-cli-mcp
 ```
+
+Prefer an isolated install for the `ts` / `ts-mcp` command-line tools:
+
+```bash
+pipx install tradestation-cli-mcp        # or: uv tool install tradestation-cli-mcp
+```
+
+Optional pandas support (DataFrame helpers): `pip install "tradestation-cli-mcp[pandas]"`.
+Requires **Python 3.10+**.
 
 The package distributes the **library** (`tradestation/…`), a **CLI** built on top of it (`tradestation/cli/…`), and an **MCP server** also built on top of it (`tradestation/mcp/…`). The library is the only thing that speaks HTTP — the CLI and MCP server are thin layers over it.
 
@@ -34,8 +49,6 @@ The package distributes the **library** (`tradestation/…`), a **CLI** built on
 - **~550 unit/CLI/MCP tests + live SIM integration tests**, CI on Python 3.10–3.13 (lint, types, full suite).
 - Equities, **futures**, and **crypto** all supported.
 - Default environment is **sim** (paper trading) — safe by default.
-
-> **Not yet on PyPI.** Until the first release is published, install from source (see [Development](#development)).
 
 ## Quick start
 
