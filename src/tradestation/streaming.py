@@ -8,8 +8,6 @@ chunked transfer. This module provides:
 - :class:`StreamEvent` — base envelope for all stream frames.
 - Helper utilities for typed async iteration (used by service methods B12-B17
   and C10-C13).
-
-Implementation: Phase 2.
 """
 
 from __future__ import annotations

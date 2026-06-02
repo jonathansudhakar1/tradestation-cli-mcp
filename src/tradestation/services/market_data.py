@@ -3,8 +3,7 @@
 See docs/03-endpoint-inventory.md §"B. MarketData" for the full inventory.
 See docs/05-python-library.md §"Service surface" for method signatures.
 
-All methods raise ``NotImplementedError`` in Phase 0 (scaffolding only).
-Implementation tracked in Phase 2.
+Covers the REST endpoints (B1-B11) and streaming endpoints (B12-B17).
 """
 
 from __future__ import annotations

@@ -3,8 +3,7 @@
 See docs/03-endpoint-inventory.md §"C. Brokerage" for the full inventory.
 See docs/05-python-library.md §"Service surface" for method signatures.
 
-REST methods (C1-C9) are implemented. Streaming methods (C10-C13) remain
-stubs pending Phase 5.
+Covers the REST endpoints (C1-C9) and streaming endpoints (C10-C13).
 """
 
 from __future__ import annotations

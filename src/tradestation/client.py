@@ -184,9 +184,6 @@ class TradeStationClient:
 
         Returns:
             :class:`~tradestation.services.brokerage.BrokerageService`
-
-        Raises:
-            NotImplementedError: Until Phase 4 implementation.
         """
         if self._brokerage is None:
             self._brokerage = BrokerageService(self._transport)
@@ -198,9 +195,6 @@ class TradeStationClient:
 
         Returns:
             :class:`~tradestation.services.order_execution.OrderExecutionService`
-
-        Raises:
-            NotImplementedError: Until Phase 5 implementation.
         """
         if self._order_execution is None:
             self._order_execution = OrderExecutionService(self._transport)
