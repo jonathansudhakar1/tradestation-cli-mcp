@@ -24,6 +24,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - CI lint/format failures on the 0.2.0 commit (`_DEFAULT_SCOPE` wrapping and an
   unused `noqa`) that prevented the release build from going green.
+- Python 3.10 `StrEnum` backport didn't override `__str__`/`__format__`, so
+  `str(member)` returned `"Environment.SIM"` instead of `"sim"` — corrupting the
+  serialized credentials `environment` field on 3.10. Now matches native 3.11+
+  `enum.StrEnum`, with `environment` serialized from `.value` explicitly.
 
 ## [0.2.0] — 2026-06-01
 

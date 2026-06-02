@@ -343,7 +343,7 @@ def _credentials_to_payload(creds: Credentials) -> dict[str, Any]:
         "client_secret": creds.client_secret,
         "refresh_token": creds.refresh_token,
         "scope": creds.scope,
-        "environment": str(creds.environment),
+        "environment": creds.environment.value,
         "access_token": creds.access_token,
         "access_token_expires_at": creds.access_token_expires_at,
         "id_token": creds.id_token,

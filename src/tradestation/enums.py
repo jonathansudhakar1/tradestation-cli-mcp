@@ -17,7 +17,18 @@ else:
     import enum
 
     class StrEnum(str, enum.Enum):
-        """Backport of ``enum.StrEnum`` for Python 3.10."""
+        """Backport of ``enum.StrEnum`` for Python 3.10.
+
+        Mirrors native ``enum.StrEnum`` (3.11+): ``str(member)`` and
+        ``format(member)`` return the string *value* (e.g. ``"sim"``), not the
+        ``"Class.MEMBER"`` repr that a plain ``(str, Enum)`` would produce.
+        """
+
+        def __str__(self) -> str:
+            return str.__str__(self)
+
+        def __format__(self, format_spec: str) -> str:
+            return str.__format__(self, format_spec)
 
 
 class Side(StrEnum):
