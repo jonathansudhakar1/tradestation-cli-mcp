@@ -166,7 +166,7 @@ def accounts_cmd(ctx: typer.Context) -> None:
                 else a
                 for a in accounts
             ]
-        except Exception as exc:  # noqa: BLE001 — enrichment is non-critical
+        except Exception as exc:
             if cli.verbose:
                 cli.console.print(
                     f"[ts.muted](could not fetch balances for accounts view: {exc})[/ts.muted]"

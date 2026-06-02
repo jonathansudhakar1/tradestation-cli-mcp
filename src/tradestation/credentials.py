@@ -66,7 +66,9 @@ _KEYRING_SERVICE = "tscli"
 _KEYRING_ACCOUNT = "credentials-key-v1"
 _KDF_ITERATIONS = 600_000
 _SALT_BYTES = 24
-_DEFAULT_SCOPE = "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access"
+_DEFAULT_SCOPE = (
+    "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access"
+)
 
 
 # ---------------------------------------------------------------------------
