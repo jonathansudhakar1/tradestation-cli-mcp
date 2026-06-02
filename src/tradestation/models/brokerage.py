@@ -49,7 +49,13 @@ class _TSModel(BaseModel):
 
 
 class Account(_TSModel):
-    """A brokerage account (C1)."""
+    """A brokerage account (C1).
+
+    ``equity`` and ``buying_power`` are *not* returned by the C1 accounts
+    endpoint — it carries account metadata only. The CLI populates them from
+    the C2 balances endpoint when rendering a combined view; they remain
+    ``None`` when balances are unavailable.
+    """
 
     account_id: str = Field(..., alias="AccountID")
     account_type: str | None = Field(None, alias="AccountType")
@@ -57,6 +63,8 @@ class Account(_TSModel):
     status: str | None = Field(None, alias="Status")
     alias: str | None = Field(None, alias="Alias")
     account_detail: dict[str, Any] | None = Field(None, alias="AccountDetail")
+    equity: float | None = Field(None, alias="Equity")
+    buying_power: float | None = Field(None, alias="BuyingPower")
 
 
 # ---------------------------------------------------------------------------

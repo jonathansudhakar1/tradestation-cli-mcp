@@ -150,6 +150,28 @@ def accounts_cmd(ctx: typer.Context) -> None:
     """
     cli = CLIContext.from_typer(ctx)
     accounts = _run(cli, cli.client.brokerage.list_accounts())
+
+    # C1 returns account metadata only — Equity / BuyingPower live on the C2
+    # balances endpoint. Enrich each account with its balance so the combined
+    # view shows real figures instead of zeros. Best-effort: if balances can't
+    # be fetched, the accounts still render (with Equity/BuyingPower blank).
+    ids = [a.account_id for a in accounts if a.account_id]
+    if ids:
+        try:
+            balances = _run(cli, cli.client.brokerage.get_balances(ids))
+            by_id = {b.account_id: b for b in balances}
+            accounts = [
+                a.model_copy(update={"equity": bal.equity, "buying_power": bal.buying_power})
+                if (bal := by_id.get(a.account_id)) is not None
+                else a
+                for a in accounts
+            ]
+        except Exception as exc:  # noqa: BLE001 — enrichment is non-critical
+            if cli.verbose:
+                cli.console.print(
+                    f"[ts.muted](could not fetch balances for accounts view: {exc})[/ts.muted]"
+                )
+
     _emit(
         cli,
         accounts,

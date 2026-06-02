@@ -307,22 +307,28 @@ def table_accounts(accounts: Sequence[dict[str, Any]]) -> Table:
     tbl.add_column("Equity", justify="right", style="ts.price")
     tbl.add_column("BuyingPower", justify="right", style="ts.price")
 
+    def _money(raw: Any) -> str:
+        # Distinguish "unknown" (None / absent — C1 doesn't return it) from a
+        # genuine 0.00 so the view never implies a zero balance it didn't read.
+        if raw is None:
+            return "—"
+        try:
+            return f"{float(raw):,.2f}"
+        except (TypeError, ValueError):
+            return "—"
+
     for a in accounts:
         acct = str(a.get("AccountID", ""))
         acct_type = str(a.get("AccountType", ""))
         status = str(a.get("Status", ""))
         currency = str(a.get("Currency", "USD"))
-        equity_raw = a.get("Equity", "0")
-        equity = float(equity_raw) if equity_raw else 0.0
-        bp_raw = a.get("BuyingPower", "0")
-        bp = float(bp_raw) if bp_raw else 0.0
         tbl.add_row(
             acct,
             acct_type,
             status,
             currency,
-            f"{equity:,.2f}",
-            f"{bp:,.2f}",
+            _money(a.get("Equity")),
+            _money(a.get("BuyingPower")),
         )
     return tbl
 
