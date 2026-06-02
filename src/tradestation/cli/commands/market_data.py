@@ -400,6 +400,123 @@ def opt_spread_types_cmd(ctx: typer.Context) -> None:
             sys.stdout.write(json.dumps(t.model_dump(by_alias=False), default=str) + "\n")
 
 
+@options_app.command(name="strikes")
+def opt_strikes_cmd(
+    ctx: typer.Context,
+    underlying: Annotated[str, typer.Argument(help="Underlying symbol.")],
+    expiration: Annotated[
+        str | None,
+        typer.Option("--expiration", "-e", help="Expiration date (YYYY-MM-DD)."),
+    ] = None,
+    spread_type: Annotated[
+        str | None,
+        typer.Option("--spread-type", help="Spread type filter (e.g. Single, Vertical)."),
+    ] = None,
+) -> None:
+    """List available strike prices for an underlying.
+
+    Maps to: B9 — ``GET /v3/marketdata/options/strikes/{underlying}``
+
+    Examples::
+
+        ts md options strikes AAPL --expiration 2026-06-19
+        ts md options strikes AAPL -e 2026-06-19 --spread-type Vertical
+    """
+    cli = CLIContext.from_typer(ctx)
+    result = _run_md(
+        cli,
+        cli.client.market_data.get_option_strikes(
+            underlying, expiration=expiration, spread_type=spread_type
+        ),
+    )
+    if cli.output_mode != OutputMode.TABLE:
+        sys.stdout.write(json.dumps(result, default=str) + "\n")
+        return
+
+    groups = result.get("Strikes", []) if isinstance(result, dict) else []
+    spread = result.get("SpreadType", "") if isinstance(result, dict) else ""
+    now = datetime.now(timezone.utc).strftime("%H:%M:%S")
+    cli.console.print(
+        render_banner(
+            f"Strikes {underlying}",
+            f"{spread or 'Single'}  ·  {len(groups)} strikes"
+            + (f"  ·  exp {expiration}" if expiration else ""),
+            cli.environment.value,
+            now,
+        )
+    )
+    # Each group is a list (one element for single-leg spreads). Render compactly.
+    chips = ["·".join(str(s) for s in grp) if isinstance(grp, list) else str(grp) for grp in groups]
+    cli.console.print("[ts.price]" + "   ".join(chips) + "[/ts.price]")
+
+
+@options_app.command(name="risk-reward")
+def opt_risk_reward_cmd(
+    ctx: typer.Context,
+    leg: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--leg",
+            help='Leg as "<OCC symbol>,<buy|sell>,<qty>,<openPrice>". Repeatable.',
+        ),
+    ] = None,
+    entry: Annotated[
+        float | None,
+        typer.Option("--entry", help="Net entry (spread) price."),
+    ] = None,
+) -> None:
+    """Compute risk/reward for a multi-leg option position.
+
+    Maps to: B11 — ``POST /v3/marketdata/options/riskreward``
+
+    Each ``--leg`` is ``<symbol>,<buy|sell>,<qty>,<openPrice>``; sell legs get a
+    negative ratio. Example::
+
+        ts md options risk-reward \\
+          --leg "AAPL 260619C200,buy,1,5.40" \\
+          --leg "AAPL 260619C210,sell,1,2.10" \\
+          --entry 3.30
+    """
+    cli = CLIContext.from_typer(ctx)
+    if not leg or entry is None:
+        cli.console.print("[ts.bad]✖[/ts.bad] At least one --leg and --entry are required.")
+        raise typer.Exit(code=2)
+
+    legs: list[dict[str, Any]] = []
+    for spec in leg:
+        parts = [p.strip() for p in spec.split(",")]
+        if len(parts) != 4:
+            cli.console.print(
+                f"[ts.bad]✖[/ts.bad] Bad --leg {spec!r}. "
+                'Expected "<symbol>,<buy|sell>,<qty>,<openPrice>".'
+            )
+            raise typer.Exit(code=2)
+        sym, side, qty_s, price_s = parts
+        try:
+            qty = int(qty_s)
+        except ValueError:
+            cli.console.print(f"[ts.bad]✖[/ts.bad] Bad quantity in --leg {spec!r}.")
+            raise typer.Exit(code=2) from None
+        ratio = -qty if side.lower().startswith("s") else qty
+        legs.append({"Symbol": sym, "Ratio": ratio, "OpenPrice": price_s})
+
+    result = _run_md(cli, cli.client.market_data.option_risk_reward(legs, entry=entry))
+    if cli.output_mode != OutputMode.TABLE:
+        sys.stdout.write(json.dumps(result, default=str) + "\n")
+        return
+
+    from rich import box
+    from rich.table import Table
+
+    tbl = Table(box=box.ROUNDED, header_style="ts.header", title="Risk / Reward")
+    tbl.add_column("Metric", style="ts.label")
+    tbl.add_column("Value", justify="right", style="ts.value")
+    if isinstance(result, dict):
+        for key, val in result.items():
+            tbl.add_row(str(key), str(val))
+    cli.console.print(tbl)
+
+
 # ---------------------------------------------------------------------------
 # B16 (snapshot) — `ts md options chain`
 # ---------------------------------------------------------------------------
@@ -814,6 +931,124 @@ def stream_bars_cmd(
             return await _consume_stream(
                 cli,
                 ts.market_data.stream_bars(symbol),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    n = _run_md(cli, _go())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print(f"[ts.ok]✔ stream closed — {n} frames[/ts.ok]")
+
+
+@stream_app.command(name="depth-quotes")
+def stream_depth_quotes_cmd(
+    ctx: typer.Context,
+    symbol: Annotated[str, typer.Argument(help="Symbol.")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream Level-2 individual market-depth quotes. Ctrl-C to stop.
+
+    Maps to: B14 — ``GET /v3/marketdata/stream/marketdepth/quotes/{symbol}``
+    """
+    cli = CLIContext.from_typer(ctx)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume_stream(
+                cli,
+                ts.market_data.stream_depth_quotes(symbol),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    n = _run_md(cli, _go())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print(f"[ts.ok]✔ stream closed — {n} frames[/ts.ok]")
+
+
+@stream_app.command(name="depth-agg")
+def stream_depth_agg_cmd(
+    ctx: typer.Context,
+    symbol: Annotated[str, typer.Argument(help="Symbol.")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream Level-2 aggregate market-depth data. Ctrl-C to stop.
+
+    Maps to: B15 — ``GET /v3/marketdata/stream/marketdepth/aggregates/{symbol}``
+    """
+    cli = CLIContext.from_typer(ctx)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume_stream(
+                cli,
+                ts.market_data.stream_depth_aggregates(symbol),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    n = _run_md(cli, _go())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print(f"[ts.ok]✔ stream closed — {n} frames[/ts.ok]")
+
+
+@stream_app.command(name="option-chain")
+def stream_option_chain_cmd(
+    ctx: typer.Context,
+    underlying: Annotated[str, typer.Argument(help="Underlying symbol.")],
+    expiration: Annotated[
+        str,
+        typer.Option("--expiration", "-e", help="Expiration date (YYYY-MM-DD)."),
+    ],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live option-chain updates for one expiration. Ctrl-C to stop.
+
+    Maps to: B16 — ``GET /v3/marketdata/stream/options/chains/{underlying}``
+
+    For a one-shot rendered snapshot instead, use ``ts md options chain``.
+    """
+    cli = CLIContext.from_typer(ctx)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume_stream(
+                cli,
+                ts.market_data.stream_option_chain(underlying, expiration),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    n = _run_md(cli, _go())
+    if cli.output_mode == OutputMode.TABLE:
+        cli.console.print(f"[ts.ok]✔ stream closed — {n} frames[/ts.ok]")
+
+
+@stream_app.command(name="option-quotes")
+def stream_option_quotes_cmd(
+    ctx: typer.Context,
+    leg: Annotated[
+        list[str],
+        typer.Option("--leg", help="Option leg symbol (e.g. 'AAPL 260619C200'). Repeatable."),
+    ],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live option quotes for one or more legs. Ctrl-C to stop.
+
+    Maps to: B17 — ``GET /v3/marketdata/stream/options/quotes``
+    """
+    cli = CLIContext.from_typer(ctx)
+    legs = [{"Symbol": s} for s in leg]
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume_stream(
+                cli,
+                ts.market_data.stream_option_quotes(legs),
                 max_frames=max_frames,
                 for_seconds=for_seconds,
             )

@@ -401,6 +401,30 @@ def stream_orders_cmd(
     _run(cli, _go())
 
 
+@stream_app.command(name="order")
+def stream_order_by_id_cmd(
+    ctx: typer.Context,
+    account_id: Annotated[str, typer.Argument(help="Account ID.")],
+    order_ids: Annotated[list[str], typer.Argument(help="Order ID(s).")],
+    max_frames: _MaxOpt = 0,
+    for_seconds: _ForOpt = 0,
+) -> None:
+    """Stream live events for specific orders. Maps to: C11."""
+    cli = CLIContext.from_typer(ctx)
+    oids = _split_ids(order_ids)
+
+    async def _go() -> int:
+        async with cli.client.as_async() as ts:
+            return await _consume(
+                cli,
+                ts.brokerage.stream_orders_by_id([account_id], oids),
+                max_frames=max_frames,
+                for_seconds=for_seconds,
+            )
+
+    _run(cli, _go())
+
+
 @stream_app.command(name="positions")
 def stream_positions_cmd(
     ctx: typer.Context,

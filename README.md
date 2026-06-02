@@ -130,6 +130,25 @@ async with AsyncTradeStationClient.from_env() as ts:
         print(event.raw)
 ```
 
+## Command reference
+
+Every command supports `--output table|json|jsonl|csv|tsv|yaml` and `--help`. Run `ts --help`, `ts md --help`, `ts brokerage --help`, `ts order --help` to explore.
+
+| Group | Commands |
+|---|---|
+| `ts auth` | `set` · `status` · `refresh` · `export` · `clear` · `doctor` · `login` |
+| `ts md` | `quotes` · `bars` · `symbols` |
+| `ts md crypto` | `pairs` |
+| `ts md options` | `expirations` · `strikes` · `spread-types` · `chain` · `risk-reward` |
+| `ts md stream` | `quotes` · `bars` · `depth-quotes` · `depth-agg` · `option-chain` · `option-quotes` |
+| `ts brokerage` (alias `bk`) | `accounts` · `balances` · `bod` · `positions` · `orders` · `order` · `historical` · `wallets` |
+| `ts brokerage stream` | `orders` · `order` · `positions` · `wallets` |
+| `ts order` | `confirm` · `place` · `replace` · `cancel` · `routes` · `triggers` |
+| `ts order group` | `confirm` · `place` (OCO / bracket / OSO, JSON spec) |
+| `ts env` | `show` · `live` · `sim` |
+
+Streaming commands accept `--max N` (stop after N frames) and `--for SECONDS` (timed run). See [docs/04-cli-design.md](docs/04-cli-design.md) for the full surface.
+
 ## Credentials
 
 `ts auth set` stores credentials at `~/.tscli/credentials`, encrypted with Fernet (key in the OS keyring, with a PBKDF2 passphrase fallback). Access tokens (20-min lifetime) are cached and refreshed proactively; rotating refresh tokens are persisted atomically. See [docs/02-auth-and-credentials.md](docs/02-auth-and-credentials.md).

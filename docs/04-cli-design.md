@@ -266,7 +266,7 @@ ts md options risk-reward \
   --entry 3.30
 ```
 
-Legs accept the form `<OCC symbol>,<buy|sell>,<qty>,<price>`. May be repeated; or a single `--legs-json '[...]'` for scripts.
+Legs accept the form `<OCC symbol>,<buy|sell>,<qty>,<openPrice>` and may be repeated; sell legs are sent with a negative ratio. `--entry` is the net spread price.
 
 ### `ts md stream …`
 
