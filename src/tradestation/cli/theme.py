@@ -15,13 +15,14 @@ Usage::
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
-try:
-    import tomllib  # type: ignore[import-not-found]
-except ImportError:
-    import tomli as tomllib  # type: ignore[import-not-found]
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 from rich.theme import Theme
 

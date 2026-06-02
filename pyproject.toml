@@ -42,6 +42,7 @@ dependencies = [
   "typer>=0.12",
   "rich>=13.7",
   "click>=8.1",
+  "tomli>=2.0; python_version < '3.11'",
 
   # --- MCP server ---
   "fastmcp>=2.0",
@@ -134,7 +135,7 @@ disallow_untyped_decorators = true
 no_implicit_reexport = false   # we re-export in __init__.py
 
 [[tool.mypy.overrides]]
-module = ["keyring.*", "fastmcp.*", "vcrpy.*"]
+module = ["keyring.*", "fastmcp.*", "vcrpy.*", "tomli"]
 ignore_missing_imports = true
 
 # ─────────────────────────────────────────────────────────────────────────────
