@@ -6,7 +6,7 @@
 [![Downloads](https://img.shields.io/pypi/dm/tradestation-cli-mcp.svg)](https://pypi.org/project/tradestation-cli-mcp/)
 [![License: MIT](https://img.shields.io/pypi/l/tradestation-cli-mcp.svg)](LICENSE)
 
-A single Python package that provides three things on top of the [TradeStation v3 REST API](https://api.tradestation.com/docs/):
+**A Python library, command-line interface (CLI), and Model Context Protocol (MCP) server for the [TradeStation v3 REST API](https://api.tradestation.com/docs/)** — real-time and streaming market data for stocks, options, futures, and crypto, plus brokerage accounts, balances, positions, and order execution. One `pip install` gives you all three on top of TradeStation:
 
 | Use it as… | What it gives you | How to invoke |
 |---|---|---|

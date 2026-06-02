@@ -8,12 +8,32 @@ build-backend = "hatchling.build"
 [project]
 name = "tradestation-cli-mcp"
 dynamic = ["version"]
-description = "TradeStation v3 Python library + CLI (`ts`) + MCP server (`ts-mcp`)."
+description = "TradeStation v3 API for Python: a typed client library, a CLI (ts), and an MCP server (ts-mcp) for market data, brokerage, and order execution across stocks, options, futures, and crypto."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [{ name = "Jonathan", email = "jonathan@getangler.ai" }]
-keywords = ["tradestation", "trading", "brokerage", "mcp", "cli", "options", "futures"]
+keywords = [
+  "tradestation",
+  "tradestation-api",
+  "trading",
+  "trading-api",
+  "brokerage",
+  "stocks",
+  "equities",
+  "options",
+  "futures",
+  "crypto",
+  "market-data",
+  "real-time",
+  "streaming",
+  "order-execution",
+  "mcp",
+  "mcp-server",
+  "model-context-protocol",
+  "cli",
+  "fintech",
+]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Financial and Insurance Industry",
