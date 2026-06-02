@@ -394,6 +394,7 @@ class MarketDataService(BaseService):
         underlying: str,
         expiration: str,
         *,
+        strike_proximity: int | None = None,
         include_heartbeats: bool = False,
     ) -> AsyncIterator[StreamEvent]:
         """Stream live option chain data for an underlying.
@@ -403,16 +404,24 @@ class MarketDataService(BaseService):
         Args:
             underlying: Underlying symbol.
             expiration: Expiration date (ISO-8601).
+            strike_proximity: Number of strikes to return *above and below* the
+                at-the-money strike. The server defaults to a small window
+                (~5 each side), so pass this to widen the chain. ``None`` uses
+                the server default.
             include_heartbeats: When ``True``, yield heartbeat events.
 
         Yields:
             :class:`~tradestation.streaming.StreamEvent` subclass instances.
         """
-        params = {"expiration": expiration} if expiration else None
+        params: dict[str, Any] = {}
+        if expiration:
+            params["expiration"] = expiration
+        if strike_proximity is not None:
+            params["strikeProximity"] = strike_proximity
         async for event in stream_events(
             self._transport,
             f"/marketdata/stream/options/chains/{underlying}",
-            params=params,
+            params=params or None,
             include_heartbeats=include_heartbeats,
         ):
             yield event

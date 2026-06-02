@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.2] — 2026-06-01
+
+### Fixed
+
+- `ts md options chain --strikes/-n N` was capped at the server's small default
+  window (~20 strikes) because the stream was opened without `strikeProximity`
+  and `-n` only trimmed client-side. The chain now requests enough strikes from
+  the server (`strikeProximity` derived from `-n`), so e.g. `-n 100` returns up
+  to 100 strikes centered on ATM. Added `strike_proximity` to
+  `MarketDataService.stream_option_chain` (B16).
+
 ## [0.2.1] — 2026-06-01
 
 ### Added

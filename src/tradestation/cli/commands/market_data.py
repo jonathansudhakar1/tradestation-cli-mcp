@@ -682,10 +682,17 @@ def opt_chain_cmd(
         atm = None
 
     # 3. Collect the chain snapshot (bounded by EndSnapshot or --timeout).
+    # The stream defaults to a small window around ATM, so request enough
+    # strikes on each side to satisfy --strikes (plus a small buffer, since the
+    # server centers on its own ATM which may differ slightly from ours).
+    proximity = (strikes // 2) + 3 if strikes > 0 else None
+
     async def _gather(frames: list[dict[str, Any]]) -> None:
         import contextlib
 
-        agen: Any = cli.client.market_data.stream_option_chain(underlying, expiration)
+        agen: Any = cli.client.market_data.stream_option_chain(
+            underlying, expiration, strike_proximity=proximity
+        )
         async with contextlib.aclosing(agen) as stream:
             async for ev in stream:
                 data = ev.raw or {}
