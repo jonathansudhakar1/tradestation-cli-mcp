@@ -118,7 +118,7 @@ Interactive by default; flag-driven for scripts. See [02-auth-and-credentials.md
 
 ```
 ts auth set [--client-id ID] [--client-secret SECRET] [--refresh-token TOKEN]
-            [--scope "openid offline_access MarketData ReadAccount Trade"]
+            [--scope "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access"]
             [--env live|sim] [--encrypt/--no-encrypt]
             [--keyring/--no-keyring] [--passphrase-stdin]
             [--i-understand-the-risk]      # required with --no-encrypt
@@ -137,7 +137,7 @@ $ ts auth status
 │ Client ID      ******M3xQ                                 │
 │ Refresh token  ******t9pK   (rotation: off)               │
 │ Access token   valid   (expires in 17m 02s — 15:30 UTC)   │
-│ Scope          openid offline_access MarketData ReadAccount Trade │
+│ Scope          openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access │
 └───────────────────────────────────────────────────────────┘
 ```
 

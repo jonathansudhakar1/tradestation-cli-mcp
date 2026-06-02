@@ -50,7 +50,7 @@ ts = TradeStationClient.from_default_credentials()
 # 2. Explicit
 ts = TradeStationClient(Credentials(
     client_id="...", client_secret="...", refresh_token="...",
-    scope="openid offline_access MarketData ReadAccount Trade",
+    scope="openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access",
     environment=Environment.LIVE,
 ))
 

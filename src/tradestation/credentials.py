@@ -25,7 +25,7 @@ Decrypted payload::
         "client_id": "<opaque>",
         "client_secret": "<opaque>",
         "refresh_token": "<opaque>",
-        "scope": "openid offline_access MarketData ReadAccount Trade",
+        "scope": "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access",
         "environment": "sim",
         "access_token": "<opaque or null>",
         "access_token_expires_at": "2026-06-01T15:30:00Z",
@@ -66,7 +66,7 @@ _KEYRING_SERVICE = "tscli"
 _KEYRING_ACCOUNT = "credentials-key-v1"
 _KDF_ITERATIONS = 600_000
 _SALT_BYTES = 24
-_DEFAULT_SCOPE = "openid offline_access MarketData ReadAccount Trade"
+_DEFAULT_SCOPE = "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access"
 
 
 # ---------------------------------------------------------------------------

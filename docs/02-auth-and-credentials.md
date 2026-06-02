@@ -31,7 +31,7 @@ TradeStation credential setup
   Client ID         > <paste>       ← prompted; not echoed (Rich masked input)
   Client secret     > <paste>       ← masked; can be empty for public/PKCE clients
   Refresh token     > <paste>       ← masked
-  Scope (optional)  > openid offline_access MarketData ReadAccount Trade
+  Scope (optional)  > openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access
   Environment       > [live|sim]    ← default: live
   Encrypt at rest?  > [Y/n]         ← default: Y
 
@@ -47,7 +47,7 @@ ts auth set \
   --client-id $TS_CLIENT_ID \
   --client-secret $TS_CLIENT_SECRET \
   --refresh-token $TS_REFRESH_TOKEN \
-  --scope "openid offline_access MarketData ReadAccount Trade" \
+  --scope "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access" \
   --env live \
   --no-encrypt           # opt out (not recommended; writes plaintext)
 ```
@@ -88,7 +88,7 @@ Decrypted payload (never on disk in plaintext unless `--no-encrypt`):
   "client_id":                  "<opaque>",
   "client_secret":              "<opaque>",
   "refresh_token":              "<opaque>",
-  "scope":                      "openid offline_access MarketData ReadAccount Trade",
+  "scope":                      "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access",
   "environment":                "live",
   "access_token":               "<opaque or null>",
   "access_token_expires_at":    "2026-06-01T15:30:00Z",

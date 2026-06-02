@@ -41,7 +41,7 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-_DEFAULT_SCOPE = "openid offline_access MarketData ReadAccount Trade"
+_DEFAULT_SCOPE = "openid profile MarketData ReadAccount Trade Matrix Crypto OptionSpreads offline_access"
 
 
 def _console() -> Console:
